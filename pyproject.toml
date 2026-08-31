@@ -4,7 +4,16 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "asyncio>=4.0.0",
+    "dronekit>=2.9.2",
+    "future>=1.0.0",
+    "matplotlib>=3.10.7",
+    "nptyping>=2.0.1",
+    "numpy==1.26.4",
+    "svgpathtools>=1.7.1",
+    "utm>=0.8.1",
+]
 
 [dependency-groups]
 dev = [
@@ -22,6 +31,12 @@ venv = ".venv"
 reportUnusedCallResult = false
 reportMissingTypeStubs = false
 reportAny = false
+# TODO(drone-port): interdrone Message.data is dict[str, Any] until its consumers
+# stop relying on numeric coercion; inline "remove any" TODOs track the cleanup.
+reportExplicitAny = false
+# TODO(drone-port): remove once the drone/ package is ported; until then
+# drone.json_parser resolves against the stub in typings/ with no runtime source.
+reportMissingModuleSource = false
 reportUnknownMemberType = false
 reportUnknownArgumentType = false
 reportUnknownVariableType = false
