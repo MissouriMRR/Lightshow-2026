@@ -34,8 +34,9 @@ reportAny = false
 # TODO(drone-port): interdrone Message.data is dict[str, Any] until its consumers
 # stop relying on numeric coercion; inline "remove any" TODOs track the cleanup.
 reportExplicitAny = false
-# TODO(drone-port): remove once the drone/ package is ported; until then
-# drone.json_parser resolves against the stub in typings/ with no runtime source.
+# TODO(drone-port): remove once the drone/ and Station/ packages are ported;
+# until then drone.json_parser and Station.point resolve against stubs in
+# typings/ with no runtime source.
 reportMissingModuleSource = false
 reportUnknownMemberType = false
 reportUnknownArgumentType = false
