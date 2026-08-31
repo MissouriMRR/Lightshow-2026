@@ -4,7 +4,6 @@ from asyncio import StreamReader, StreamWriter
 from asyncio.queues import Queue
 
 from drone.json_parser import ConfigParser
-
 from interdrone.json_message_utilities import JsonMessageUtilities
 from interdrone.message_types import Message, MessageType
 
@@ -17,7 +16,10 @@ class Server:
     ):
         self.jsonConfigData: ConfigParser = jsonConfigData
         self.serverOutData: Queue[Message] = serverOutData
-        self.droneId: int = jsonConfigData.get_self_id()
+        self_id = jsonConfigData.get_self_id()
+        if self_id is None:
+            raise ValueError("config is missing localInfo.selfId")
+        self.droneId: int = int(self_id)
 
         # Track active connections to other drones for routing
         self.drone_connections: dict[int, tuple[StreamReader, StreamWriter]] = {}
@@ -31,7 +33,7 @@ class Server:
         )
 
     async def start_server_async(self):
-        port = self.jsonConfigData.get_drone_port(self.droneId)
+        port = self.jsonConfigData.get_drone_port(str(self.droneId))
         if port is None:
             raise ValueError(f"Drone {self.droneId} port not configured")
 
@@ -43,7 +45,7 @@ class Server:
 
         try:
             async with server:
-                port = self.jsonConfigData.get_drone_port(self.droneId)
+                port = self.jsonConfigData.get_drone_port(str(self.droneId))
                 print(f"[Drone {self.droneId}] Server listening on 0.0.0.0:{port}")
                 await server.serve_forever()
         except KeyboardInterrupt:

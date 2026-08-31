@@ -4,7 +4,6 @@ import queue
 import threading
 
 from drone.json_parser import ConfigParser
-
 from interdrone.message_types import Message, MessageType
 from interdrone.networking_interface import NetworkingInterface
 from interdrone.networking_thread import NetworkingThread
@@ -17,14 +16,17 @@ async def main():
     args = parser.parse_args()
 
     # Load config
-    jsonConfigData = ConfigParser()
+    jsonConfigData = ConfigParser("./Models/Example jsons/example_config.json")
 
     # Get drone ID
     if args.id is not None:
         droneId = args.id
         jsonConfigData.set_self_id(droneId)
     else:
-        droneId = int(jsonConfigData.get_self_id())
+        self_id = jsonConfigData.get_self_id()
+        if self_id is None:
+            raise ValueError("config is missing localInfo.selfId")
+        droneId = int(self_id)
 
     # Start networking thread
     networkingThreadClassInstance: NetworkingThread = NetworkingThread()
@@ -40,6 +42,9 @@ async def main():
     networking: NetworkingInterface = resourcesReady.get()
     print("Networking interface ready")
 
+    # Multiply a single char by the configured Kb size to make a payload of that size
+    payload_size = int(jsonConfigData.get_speed_test_kb_data_size() or 0) * 1024
+
     speedTestMessage: Message = Message.create(
         id=MessageType.SPEED_TEST_REQUEST,
         dronesToSendData=(),
@@ -49,11 +54,8 @@ async def main():
             "initialDownloadTime": 0.0,
             "finalDownloadTime": 0.0,
             "senderId": droneId,
-            "payloadSize": jsonConfigData.get_speed_test_kb_data_size() * 1024,
-            "payload": "X"
-            * (
-                jsonConfigData.get_speed_test_kb_data_size() * 1024
-            ),  # Multiply string by a specified size of Kb to create a payload size (It's just a very long string of X's to simulate data)
+            "payloadSize": payload_size,
+            "payload": "X" * payload_size,
         },
     )
 

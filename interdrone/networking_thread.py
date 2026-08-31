@@ -4,7 +4,6 @@ from asyncio.events import AbstractEventLoop
 from asyncio.queues import Queue as AsyncQueue
 
 from drone.json_parser import ConfigParser
-
 from interdrone import client, server
 from interdrone.message_types import Message
 from interdrone.networking_interface import NetworkingInterface

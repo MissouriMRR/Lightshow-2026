@@ -3,7 +3,6 @@ import time
 from asyncio.queues import Queue
 
 from drone.json_parser import ConfigParser
-
 from interdrone.json_message_utilities import JsonMessageUtilities
 from interdrone.message_types import Message, MessageType
 
@@ -23,7 +22,10 @@ class Client:
         self.clientInData: Queue[Message] = clientInData
         self.clientOutData: Queue[Message] = clientOutData
 
-        self.droneId: int = jsonConfigData.get_self_id()
+        self_id = jsonConfigData.get_self_id()
+        if self_id is None:
+            raise ValueError("config is missing localInfo.selfId")
+        self.droneId: int = int(self_id)
 
         # Instantiate otherDrones lists
         self.otherDronesIps: list[str] = []
@@ -49,7 +51,10 @@ class Client:
 
         # Ground station connection info
         self.gs_ip: str = self.jsonConfigData.get_gs_ip()
-        self.gs_port: int = self.jsonConfigData.get_gs_port()
+        gs_port = self.jsonConfigData.get_gs_port()
+        if gs_port is None:
+            raise ValueError("config is missing gs.port")
+        self.gs_port: int = gs_port
 
     async def start_client_async(self):
         await self.client_loop()
