@@ -1,0 +1,30 @@
+[project]
+name = "python-template"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.39.10",
+    "gitlint>=0.19.1",
+    "prek>=0.4.14",
+    "ruff>=0.16.3",
+]
+
+[tool.basedpyright]
+typeCheckingMode = "recommended"
+# If uv is being used, this should match where uv creates the virtual environment
+venvPath = "."
+venv = ".venv"
+reportUnusedCallResult = false
+reportMissingTypeStubs = false
+reportAny = false
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+
+[tool.ruff.lint]
+ignore = ["BLE001", "LOG015"]
