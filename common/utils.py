@@ -2,9 +2,9 @@ import json
 from collections.abc import Callable
 
 import dronekit
-from Station.point import Point3d
 
 from common.config import Config
+from station.point import Point3d
 
 
 def parse_json(filename: str) -> Config:
