@@ -37,7 +37,7 @@ class Drone:
         use_test_vehicle: bool = True,
         vehicle_connection_string: str = "",
     ) -> None:
-        self.jsonConfigData = ConfigParser("./Models/Example jsons/example_config.json")
+        self.jsonConfigData = ConfigParser("./models/Example jsons/example_config.json")
         self.jsonConfigData.set_self_id(drone_id)
 
         if connection is None:

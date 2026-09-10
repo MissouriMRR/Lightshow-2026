@@ -9,7 +9,6 @@ dependencies = [
     "dronekit>=2.9.2",
     "future>=1.0.0",
     "matplotlib>=3.10.7",
-    "nptyping>=2.0.1",
     "numpy==1.26.4",
     "svgpathtools>=1.7.1",
     "utm>=0.8.1",

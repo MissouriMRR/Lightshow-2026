@@ -596,18 +596,6 @@ wheels = [
 ]
 
 [[package]]
-name = "nptyping"
-version = "2.5.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "numpy" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e1/b7/ffe533358c32506b1708feec0fb04ba0a35a959a94163fff5333671909da/nptyping-2.5.0.tar.gz", hash = "sha256:e3d35b53af967e6fb407c3016ff9abae954d3a0568f7cc13a461084224e8e20a", size = 71623, upload-time = "2023-02-20T21:57:11.814Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/28/92edc05378175de13a3d4986cee7531853634a22b7e5e21a988fa84fde3f/nptyping-2.5.0-py3-none-any.whl", hash = "sha256:764e51836faae33a7ae2e928af574cfb701355647accadcc89f2ad793630b7c8", size = 37602, upload-time = "2023-02-20T21:57:09.61Z" },
-]
-
-[[package]]
 name = "numpy"
 version = "1.26.4"
 source = { registry = "https://pypi.org/simple" }
@@ -793,7 +781,6 @@ dependencies = [
     { name = "dronekit" },
     { name = "future" },
     { name = "matplotlib" },
-    { name = "nptyping" },
     { name = "numpy" },
     { name = "svgpathtools" },
     { name = "utm" },
@@ -813,7 +800,6 @@ requires-dist = [
     { name = "dronekit", specifier = ">=2.9.2" },
     { name = "future", specifier = ">=1.0.0" },
     { name = "matplotlib", specifier = ">=3.10.7" },
-    { name = "nptyping", specifier = ">=2.0.1" },
     { name = "numpy", specifier = "==1.26.4" },
     { name = "svgpathtools", specifier = ">=1.7.1" },
     { name = "utm", specifier = ">=0.8.1" },

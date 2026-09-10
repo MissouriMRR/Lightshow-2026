@@ -16,7 +16,7 @@ async def main():
     args = parser.parse_args()
 
     # Load config
-    jsonConfigData = ConfigParser("./Models/Example jsons/example_config.json")
+    jsonConfigData = ConfigParser("./models/Example jsons/example_config.json")
 
     # Get drone ID
     if args.id is not None:

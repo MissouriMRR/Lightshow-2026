@@ -160,9 +160,9 @@ if __name__ == "__main__":
     # from station import Station
     # from drone import Drone
     # station = Station()
-    # with open("../Models/Example jsons/example_config.json") as f:
+    # with open("../models/Example jsons/example_config.json") as f:
     #     cfg = json.load(f)
     # drone_ids = list(cfg["drones"].keys())
     # drones = {d_id: Drone(station, d_id, []) for d_id in drone_ids}
-    # asyncio.run(move_swarm_to_frame_by_id(drones, "../Models/Example jsons/example_config.json", 2))
+    # asyncio.run(move_swarm_to_frame_by_id(drones, "../models/Example jsons/example_config.json", 2))
     pass

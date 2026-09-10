@@ -40,7 +40,7 @@ class StationServer:
         return not len(list(filter(lambda x: not x.armed, self.drones.values())))
 
     def __init__(self, connection: StationConnection | None = None) -> None:
-        self.config = ConfigParser("./Models/Example jsons/example_config.json")
+        self.config = ConfigParser("./models/Example jsons/example_config.json")
         self.config.set_self_id("0")
 
         drone_frames = self.config.get_all_drone_frames()  # TODO not this

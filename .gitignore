@@ -164,3 +164,9 @@ vision/mapping/results/*
 # Vision Models
 *.pt
 *.onnx
+
+# Editor backup / swap files
+*~
+*.un~
+*.swp
+*.swo

@@ -1,0 +1,228 @@
+{
+  "drones": {
+    "0": {
+        "ip": "127.0.0.1",
+        "port": "9000"
+    },
+    "1": {
+      "ip": "127.0.0.1",
+      "port": "5001"
+    },
+    "2": {
+      "ip": "127.0.0.1",
+      "port": "5002"
+    },
+    "3": {
+      "ip": "127.0.0.1",
+      "port": "5003"
+    }
+  },
+  "gs": {
+    "ip": "127.0.0.1",
+    "port": "9000"
+  },
+  "show": {
+    "1": {
+      "frame 1": {
+        "coordinates": [
+          37.950177,
+          -91.780905,
+          1500
+        ],
+        "time_delay": 0,
+        "flight_speed": 5
+      },
+      "frame 2": {
+        "coordinates": [
+          37.950178,
+          -91.780906,
+          1505
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      },
+      "frame 3": {
+        "coordinates": [
+          37.950179,
+          -91.780907,
+          1510
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      },
+      "frame 4": {
+        "coordinates": [
+          37.950180,
+          -91.780908,
+          1515
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      },
+      "frame 5": {
+        "coordinates": [
+          37.950181,
+          -91.780909,
+          1520
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      }
+    },
+    "2": {
+      "frame 1": {
+        "coordinates": [
+          37.950182,
+          -91.780910,
+          1500
+        ],
+        "time_delay": 0,
+        "flight_speed": 5
+      },
+      "frame 2": {
+        "coordinates": [
+          37.950183,
+          -91.780911,
+          1505
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      },
+      "frame 3": {
+        "coordinates": [
+          37.950184,
+          -91.780912,
+          1510
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      },
+      "frame 4": {
+        "coordinates": [
+          37.950185,
+          -91.780913,
+          1515
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      },
+      "frame 5": {
+        "coordinates": [
+          37.950186,
+          -91.780914,
+          1520
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      }
+    },
+    "3": {
+      "frame 1": {
+        "coordinates": [
+          37.950187,
+          -91.780915,
+          1500
+        ],
+        "time_delay": 0,
+        "flight_speed": 5
+      },
+      "frame 2": {
+        "coordinates": [
+          37.950188,
+          -91.780916,
+          1505
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      },
+      "frame 3": {
+        "coordinates": [
+          37.950189,
+          -91.780917,
+          1510
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      },
+      "frame 4": {
+        "coordinates": [
+          37.950190,
+          -91.780918,
+          1515
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      },
+      "frame 5": {
+        "coordinates": [
+          37.950191,
+          -91.780919,
+          1520
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      }
+    },
+    "4": {
+      "frame 1": {
+        "coordinates": [
+          37.950192,
+          -91.780920,
+          1500
+        ],
+        "time_delay": 0,
+        "flight_speed": 5
+      },
+      "frame 2": {
+        "coordinates": [
+          37.950193,
+          -91.780921,
+          1505
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      },
+      "frame 3": {
+        "coordinates": [
+          37.950194,
+          -91.780922,
+          1510
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      },
+      "frame 4": {
+        "coordinates": [
+          37.950195,
+          -91.780923,
+          1515
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      },
+      "frame 5": {
+        "coordinates": [
+          37.950196,
+          -91.780924,
+          1520
+        ],
+        "time_delay": 5,
+        "flight_speed": 5
+      }
+    }
+  },
+  "dimensions": {
+    "center_coordinates": [
+      37.950177,
+      -91.780905,
+      1500
+    ],
+    "max_width": 100,
+    "max_length": 100,
+    "max_height": 500
+  },
+  "localInfo": {
+    "selfId": "2",
+    "speedTestKbDataSize": "16"
+  }
+}

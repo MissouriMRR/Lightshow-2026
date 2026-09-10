@@ -735,7 +735,7 @@ if __name__ == "__main__":
     # Example usage
     logging.basicConfig(level=logging.INFO)
 
-    parser = ConfigParser("../Models/Example jsons/example_config.json")
+    parser = ConfigParser("../models/Example jsons/example_config.json")
 
     # Drone info
     print("Drone IDs:", parser.get_drone_ids())
