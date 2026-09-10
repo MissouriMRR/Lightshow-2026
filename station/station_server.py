@@ -8,7 +8,7 @@ import dronekit
 
 from common.drone_state import DroneState
 from drone.json_parser import ConfigParser
-from station.station_connection import StationConnection
+from station.station_connection import StationConnection, StationConnectionLike
 
 
 class Message(Enum):
@@ -21,7 +21,7 @@ class Message(Enum):
 
 class StationServer:
     config: ConfigParser
-    connection: StationConnection
+    connection: StationConnectionLike
     drones: dict[str, DroneState]
     show_index: int
 
@@ -39,7 +39,7 @@ class StationServer:
     def armed(self) -> bool:
         return not len(list(filter(lambda x: not x.armed, self.drones.values())))
 
-    def __init__(self, connection: StationConnection | None = None) -> None:
+    def __init__(self, connection: StationConnectionLike | None = None) -> None:
         self.config = ConfigParser("./models/Example jsons/example_config.json")
         self.config.set_self_id("0")
 
