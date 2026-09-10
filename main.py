@@ -73,6 +73,7 @@ def main() -> None:
                     data={
                         "senderId": int(drone_id),
                         "payload": f"Heartbeat from Drone {drone_id}",
+                        "location": str(command_handler.drone_location),
                     },
                 )
                 networking.queue_client_message(heartbeat_message)
