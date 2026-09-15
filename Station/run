@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if g++ -L lib -I include *.c *.cpp -lfreetype -lassimp -lglfw3 -lGL -lm -lX11 -lpthread -lXi -lXrandr -ldl -lz -lbz2 -lpng -lbrotlidec; then
+    echo compilation succeeded
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:lib
+    ./a.out
+fi
+echo compilation failed
