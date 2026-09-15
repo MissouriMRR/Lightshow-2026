@@ -97,7 +97,6 @@ def main() -> None:
         elapsed = time.time() - start_time
         print(f"\n[GS] Ground Station ran for {elapsed:.2f} seconds")
         gs.shutdown()
-        print("[GS] Shutting down...")
 
 
 if __name__ == "__main__":
