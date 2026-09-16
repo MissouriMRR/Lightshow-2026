@@ -126,7 +126,7 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
-    droney.setColor(0, 0, 1, 0, 1);
+    droney.setColor(0, 1, 0, 0, 1);
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
@@ -147,9 +147,11 @@ int main() {
 
         glDisable(GL_CULL_FACE);
 
-        model = glm::translate(glm::mat4(1.0f), glm::vec3(-.5f, -3, -.5f));
+        glm::mat4 oldModel(model);
+        model = glm::translate(glm::mat4(1.0f), glm::vec3(-.5f, -0.01f, -.5f));
         setupShader(planeShader);
         planeShader.setVec3("color", color);
+        model = oldModel;
 
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
