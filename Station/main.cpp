@@ -20,6 +20,7 @@
 #include "shader.h"
 #include "model.h"
 #include "button.h"
+#include "ground.h"
 
 const int START_WIDTH = 800;
 const int START_HEIGHT = 600;
@@ -71,7 +72,6 @@ int main() {
 
     Shader fontShader("shaders/fontVertex.glsl", "shaders/fontFragment.glsl");
     Shader quadShader("shaders/fontVertex.glsl", "shaders/quadFragment.glsl");
-    Shader planeShader("shaders/planeVertex.glsl", "shaders/planeFragment.glsl");
 
     Model droney("droney/droney.obj");
     Shader shader("shaders/vertex.glsl", "shaders/fragment.glsl");
@@ -90,41 +90,14 @@ int main() {
         i++;
     };
 
+    Ground ground = Ground();
+
     makeButton("Arm");
     makeButton("TakeOff");
     makeButton("Play");
     makeButton("Land");
     makeButton("Step");
     makeButton("Halt");
-
-    float vertices[6][3] = {
-        {0, 0, 0},
-        {1, 0, 0},
-        {1, 0, 1},
-
-        {1, 0, 1},
-        {0, 0, 1},
-        {0, 0, 0},
-    };
-
-    unsigned int VAO, VBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (void*)0);
-    glEnableVertexAttribArray(4);
-
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 3, &vertices[0], GL_STATIC_DRAW);
-    glm::vec4 color(0, 1, 0, 1);
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 
     droney.setColor(0, 1, 0, 0, 1);
     while (!glfwWindowShouldClose(window)) {
@@ -142,21 +115,10 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        ground.draw(projection, &camera);
+
         setupShader(shader);
         droney.draw(shader);
-
-        glDisable(GL_CULL_FACE);
-
-        glm::mat4 oldModel(model);
-        model = glm::translate(glm::mat4(1.0f), glm::vec3(-.5f, -0.01f, -.5f));
-        setupShader(planeShader);
-        planeShader.setVec3("color", color);
-        model = oldModel;
-
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        glEnable(GL_CULL_FACE);
 
         quader.setup(&fontShader, &quadShader, glm::vec2(width, height));
         for (Button b : buttons) b.draw(quader);
