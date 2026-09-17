@@ -4,5 +4,6 @@ if g++ -L lib -I include *.c *.cpp -lfreetype -lassimp -lglfw3 -lGL -lm -lX11 -l
     echo compilation succeeded
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:lib
     ./a.out
+else
+    echo compilation failed
 fi
-echo compilation failed
