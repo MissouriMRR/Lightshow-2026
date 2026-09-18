@@ -29,8 +29,9 @@ int width = START_WIDTH;
 int height = START_HEIGHT;
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-void proccessInput(GLFWwindow* window);
+void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+// void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void setupShader(Shader &shader);
 void parseInput(Model &model, std::string input);
 int setupWindow(GLFWwindow *&window);
@@ -42,6 +43,7 @@ float lastFrame = 0.0f;
 
 float lastX = 400.0f, lastY = 300.0f;
 bool rightMouseDown = false, leftMouseDown = false;
+
 
 glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)START_WIDTH / START_HEIGHT, 0.1f, 100.0f);
 glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
@@ -132,7 +134,7 @@ int main() {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        proccessInput(window);
+        processInput(window);
 
         while (!inputQueue.empty()) {
             parseInput(droney, inputQueue.front());
@@ -176,10 +178,19 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
     setGlViewport(width, height);
 }
 
-void proccessInput(GLFWwindow* window) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
+void processInput(GLFWwindow* window) {
+    const float cameraSpeed = 25.0f * deltaTime;
 
-    const float cameraSpeed = 2.5f * deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camera.translate(glm::vec3(0, 0, cameraSpeed));
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camera.translate(glm::vec3(0, 0, -cameraSpeed));
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        camera.translate(glm::vec3(-cameraSpeed, 0, 0));
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        camera.translate(glm::vec3(cameraSpeed, 0, 0));
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         double xpos, ypos;
@@ -201,6 +212,8 @@ void proccessInput(GLFWwindow* window) {
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) rightMouseDown = true;
     else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) rightMouseDown = false;
+
+
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
@@ -222,6 +235,11 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
         camera.translate(glm::vec3(xOffset * START_WIDTH / width, yOffset * START_HEIGHT / height, 0) * panSensitivity);
     }
 }
+
+// void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+// {
+
+// }
 
 void setupShader(Shader &shader) {
     shader.use();
@@ -281,6 +299,7 @@ int setupWindow(GLFWwindow *&window) {
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     glfwSetCursorPosCallback(window, mouse_callback);
+    // glfwSetKeyCallback(window, key_callback);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize glad" << std::endl;
@@ -289,6 +308,8 @@ int setupWindow(GLFWwindow *&window) {
 
     return 0;
 }
+
+
 
 void setupInputThread() {
     std::thread thread([] {

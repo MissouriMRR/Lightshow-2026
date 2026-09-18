@@ -170,3 +170,6 @@ vision/mapping/results/*
 *.un~
 *.swp
 *.swo
+
+# NixOS shell file
+shell.nix
