@@ -1,9 +1,11 @@
 #include <cmath>
 #include <cstdio>
+#include <ctime>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include "stb_image.h"
+#include <atomic>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -12,6 +14,7 @@
 #include <ostream>
 #include <queue>
 #include <string>
+#include <system_error>
 #include <thread>
 #include <vector>
 
@@ -52,10 +55,15 @@ glm::mat4 quadProjection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
 Camera camera;
 std::vector<Button> buttons;
 
+std::thread thread;
 std::queue<std::string> inputQueue;
-
+std::atomic<bool> killThread(false);
 
 int main() {
+    long time;
+    std::time(&time);
+    srand(time);
+
     GLFWwindow *window;
     if (setupWindow(window) == -1) return -1;
 
@@ -86,7 +94,7 @@ int main() {
     int i = 0;
 
     auto makeButton = [&i, buttonWidth, buttonHeight, padding](std::string name) {
-        buttons.push_back(Button(buttonWidth / 2 + buttonWidth * i, 1 - buttonHeight / 2 - padding, buttonWidth - padding, buttonHeight, [name] {std::cout << name + "\n";}, name));
+        buttons.push_back(Button(buttonWidth / 2 + buttonWidth * i, 1 - buttonHeight / 2 - padding, buttonWidth - padding, buttonHeight, [name] {std::cout << name << std::endl;}, name));
         i++;
     };
 
@@ -99,7 +107,6 @@ int main() {
     makeButton("Step");
     makeButton("Halt");
 
-    droney.setColor(0, 1, 0, 0, 1);
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
@@ -130,7 +137,16 @@ int main() {
         glfwPollEvents();
     }
 
+
+    std::cout << "Close" << std::endl;
     glfwTerminate();
+
+    killThread.store(true);
+
+    try {
+        thread.join();
+    } catch (std::system_error &e) { }
+
     return 0;
 }
 
@@ -216,12 +232,15 @@ void parseInput(Model &model, std::string input) {
     } else if (sscanf(input.c_str(), "(%f, %f, %f, %f)", &r, &g, &b, &a) == 4) {
         model.setColor(id, r, g, b, a);
     } else if (sscanf(input.c_str(), "(%f, %f, %f)", &x, &y, &z) == 3) {
+        std::cout << "Position: " << x << " " << y << " " << z << std::endl;
         model.setPos(id, x, y, z);
     } else if (sscanf(input.c_str(), "%d.%d.%d.%d:%d", &state, &state, &state, &state, &state) == 5) {
         sscanf(input.c_str(), "%s", ip);
         model.setIp(id, ip);
     } else if (sscanf(input.c_str(), "%d", &state) == 1) {
         model.setState(id, (DroneState)state);
+    } else {
+        std::cout << "Failed to parse " << input << std::endl;
     }
 }
 
@@ -253,9 +272,9 @@ int setupWindow(GLFWwindow *&window) {
 }
 
 void setupInputThread() {
-    std::thread thread([] {
+    thread = std::thread([] {
         std::string input;
-        for (;;) {
+        while (!killThread.load()) {
             std::getline(std::cin, input);
             if (input.size() > 0) {
                 inputQueue.push(input);

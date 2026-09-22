@@ -1,4 +1,5 @@
 #include "mesh.h"
+#include <iostream>
 
 #include "shader.h"
 #include <cstddef>
@@ -38,11 +39,11 @@ void Mesh::setupMesh(unsigned int instanceVBO) {
 
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(InstanceDatum), (void*)(offsetof(InstanceDatum, position)));
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(DroneData), (void*)(offsetof(InstanceDatum, position)));
     glEnableVertexAttribArray(3);
     glVertexAttribDivisor(3, 1);
 
-    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(InstanceDatum), (void*)(offsetof(InstanceDatum, color)));
+    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(DroneData), (void*)(offsetof(InstanceDatum, color)));
     glEnableVertexAttribArray(4);
     glVertexAttribDivisor(4, 1);
 
