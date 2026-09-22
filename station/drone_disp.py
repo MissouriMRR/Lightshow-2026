@@ -29,7 +29,7 @@ class DroneDisp(tkinter.Canvas):
 
         self.station = station
 
-        self.station.set_drone_position_listener(self.send_redraw)
+        self.station.set_drone_position_listener(lambda _drone_id, _position: self.send_redraw())
 
         self.expanse = self.calc_expanse()
 
