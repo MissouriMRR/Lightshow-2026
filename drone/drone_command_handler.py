@@ -29,7 +29,7 @@ class PendingCommand:
     message: Message
     start_time: float
     duration: float  # How long the command takes to execute
-    completed: bool = False
+    completed: bool = True
     state: CommandState = CommandState.EXECUTING
 
 

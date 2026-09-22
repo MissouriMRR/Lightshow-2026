@@ -10,6 +10,8 @@ dependencies = [
     "future>=1.0.0",
     "matplotlib>=3.10.7",
     "numpy==1.26.4",
+    "pyopengl>=3.1.10",
+    "pyside6>=6.11.2",
     "svgpathtools>=1.7.1",
     "utm>=0.8.1",
 ]
