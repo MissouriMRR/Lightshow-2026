@@ -1,0 +1,10 @@
+.gitattributes text eol=lf
+.gitignore text eol=lf
+.gitlint text eol=lf
+*.py text eol=lf
+*.pyi text eol=lf
+*.cpp text eol=lf
+*.toml text eol=lf
+*.h text eol=lf
+*.glsl text eol=lf
+*.sh text eol=lf
