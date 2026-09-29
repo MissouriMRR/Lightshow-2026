@@ -2,6 +2,12 @@ version = 1
 revision = 3
 requires-python = ">=3.12"
 
+[manifest]
+members = [
+    "python-template",
+    "station",
+]
+
 [[package]]
 name = "arrow"
 version = "1.2.3"
@@ -716,6 +722,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pybind11"
+version = "3.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/76/f3/95b0f40b31df41dbfe6bb0857419c9442c15839cbac4796f1c26ae0b6081/pybind11-3.1.0.tar.gz", hash = "sha256:a1cc06b524ab3edca51f8ad3895f9c4fa20b8b19283173dff4ae781449dc9639", size = 603746, upload-time = "2026-08-06T23:33:00.675Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/33/fd/8762f7ee3e4e4be6d1d846cffb4916dd9bb02b2f800d3603718a0efe494c/pybind11-3.1.0-py3-none-any.whl", hash = "sha256:b8488090f8acffbcb6b5d6a85571a6827a0a2981ffb75e5a0b27b87c4a6b7dd0", size = 319402, upload-time = "2026-08-06T23:32:59.047Z" },
+]
+
+[[package]]
 name = "pymavlink"
 version = "2.4.49"
 source = { registry = "https://pypi.org/simple" }
@@ -782,6 +797,7 @@ dependencies = [
     { name = "future" },
     { name = "matplotlib" },
     { name = "numpy" },
+    { name = "pybind11" },
     { name = "svgpathtools" },
     { name = "utm" },
 ]
@@ -801,6 +817,7 @@ requires-dist = [
     { name = "future", specifier = ">=1.0.0" },
     { name = "matplotlib", specifier = ">=3.10.7" },
     { name = "numpy", specifier = "==1.26.4" },
+    { name = "pybind11", specifier = ">=3.1.0" },
     { name = "svgpathtools", specifier = ">=1.7.1" },
     { name = "utm", specifier = ">=0.8.1" },
 ]
@@ -913,6 +930,17 @@ sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
 ]
+
+[[package]]
+name = "station"
+version = "0.1.0"
+source = { virtual = "Station" }
+dependencies = [
+    { name = "pybind11" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pybind11", specifier = ">=3.1.0" }]
 
 [[package]]
 name = "svgpathtools"

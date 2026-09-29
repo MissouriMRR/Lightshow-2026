@@ -176,5 +176,4 @@ class Drone:
 
     # Dispatch function based on drone state enum to be run in an infinite loop
     async def tick(self) -> None:
-        print(self.vehicle.location.global_relative_frame)
         await self.connection.tick()

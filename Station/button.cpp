@@ -13,10 +13,10 @@ void Button::checkClick(float mousex, float mousey) {
     }
 }
 
-void Button::draw(Quader q) {
+void Button::draw(Quader *q) {
     const float brightness = 0.5f;
-    q.renderQuad(glm::vec2(xpos - width / 2, ypos - height / 2), glm::vec2(xpos + width / 2, ypos + height / 2), glm::vec4(brightness, brightness, brightness, 1));
-    q.renderText(text, xpos, ypos, 0.3f, glm::vec3(1, 1, 1), HCentering::CENTER, VCentering::CENTER, 1);
+    q->renderQuad(glm::vec2(xpos - width / 2, ypos - height / 2), glm::vec2(xpos + width / 2, ypos + height / 2), glm::vec4(brightness, brightness, brightness, 1));
+    q->renderText(text, xpos, ypos, 0.3f, glm::vec3(1, 1, 1), HCentering::CENTER, VCentering::CENTER, 1);
 }
 
 void Button::setClicked(bool clicked) {

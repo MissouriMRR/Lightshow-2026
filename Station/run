@@ -1,9 +1,5 @@
 #!/bin/bash
 
-if g++ -L lib -I include *.c *.cpp -lfreetype -lassimp -lglfw -lGL -lm -lX11 -lpthread -lXi -lXrandr -ldl -lz -lbz2 -lpng -lbrotlidec; then
+if g++ -shared -L lib -I include -fPIC $(uv run python3 -m pybind11 --includes) *.c *.cpp -lfreetype -lassimp -lglfw -lGL -lm -lX11 -lpthread -lXi -lXrandr -ldl -lz -lbz2 -lpng -lbrotlidec -o ../opengl_station$(uv run python3-config --extension-suffix); then
     echo compilation succeeded
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:lib
-    ./a.out
-else
-    echo compilation failed
 fi

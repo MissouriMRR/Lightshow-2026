@@ -4,6 +4,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include "mesh.h"
 #include "stb_image.h"
 #include <atomic>
 
@@ -17,6 +18,8 @@
 #include <system_error>
 #include <thread>
 #include <vector>
+
+#include "pybind11/pybind11.h"
 
 #include "quader.h"
 #include "camera.h"
@@ -35,10 +38,9 @@ int height = START_HEIGHT;
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void proccessInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void setupShader(Shader &shader);
-void parseInput(Model &model, std::string input);
+void setupShader(Shader *shader);
+void parseInput(std::string input);
 int setupWindow(GLFWwindow *&window);
-void setupInputThread();
 void setGlViewport(int width, int height);
 
 float deltaTime = 0.0f;
@@ -55,16 +57,59 @@ glm::mat4 quadProjection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
 Camera camera;
 std::vector<Button> buttons;
 
-std::thread thread;
-std::queue<std::string> inputQueue;
-std::atomic<bool> killThread(false);
+GLFWwindow *window;
 
-int main() {
+Shader *fontShader;
+Shader *quadShader;
+
+Model *droney;
+Shader *shader;
+
+Quader *quader;
+
+Ground *ground;
+
+enum class LoopReturn {
+    NOTHING,
+    ARM,
+    TAKEOFF,
+    STEP,
+    LAND,
+    HALT
+};
+LoopReturn currentMessage;
+
+void setExpanse(glm::vec3 min, glm::vec3 max) {
+    droney->minPos = min;
+    droney->maxPos = max;
+}
+
+void setColor(int id, float r, float g, float b, float a) {
+    droney->setColor(id, r, g, b, a);
+}
+
+void setPos(int id, float x, float y, float z) {
+    droney->setPos(id, x, y, z);
+}
+
+void setIp(int id, std::string ip) {
+    //TODO maybe not two copies and also having 21 extra bytes for the shaders to eat
+    char c_ip[21];
+    for (int i = 0; i < 21 && i < ip.length(); i++) {
+        c_ip[i] = ip[i];
+    }
+    droney->setIp(id, c_ip);
+}
+
+void setState(int id, int state) {
+    droney->setState(id, (DroneState)state);
+}
+
+int setup() {
     long time;
     std::time(&time);
     srand(time);
 
-    GLFWwindow *window;
     if (setupWindow(window) == -1) return -1;
 
     setGlViewport(START_WIDTH, START_HEIGHT);
@@ -78,76 +123,126 @@ int main() {
 
     stbi_set_flip_vertically_on_load(true);
 
-    Shader fontShader("shaders/fontVertex.glsl", "shaders/fontFragment.glsl");
-    Shader quadShader("shaders/fontVertex.glsl", "shaders/quadFragment.glsl");
+    fontShader = new Shader("shaders/fontVertex.glsl", "shaders/fontFragment.glsl");
+    quadShader = new Shader("shaders/fontVertex.glsl", "shaders/quadFragment.glsl");
 
-    Model droney("droney/droney.obj");
-    Shader shader("shaders/vertex.glsl", "shaders/fragment.glsl");
+    droney = new Model("droney/droney.obj");
+    shader = new Shader("shaders/vertex.glsl", "shaders/fragment.glsl");
 
-    setupInputThread();
-
-    Quader quader;
+    quader = new Quader();
+    ground = new Ground();
 
     float padding = 0.02f;
     float buttonWidth = 0.9f / 6.0f;
     float buttonHeight = 0.05f;
     int i = 0;
 
-    auto makeButton = [&i, buttonWidth, buttonHeight, padding](std::string name) {
-        buttons.push_back(Button(buttonWidth / 2 + buttonWidth * i, 1 - buttonHeight / 2 - padding, buttonWidth - padding, buttonHeight, [name] {std::cout << name << std::endl;}, name));
+    auto makeButton = [&i, buttonWidth, buttonHeight, padding](LoopReturn message, std::string name) {
+        buttons.push_back(Button(buttonWidth / 2 + buttonWidth * i, 1 - buttonHeight / 2 - padding, buttonWidth - padding, buttonHeight, [message, name] {currentMessage = message;}, name));
         i++;
     };
 
-    Ground ground = Ground();
-
-    makeButton("Arm");
-    makeButton("TakeOff");
-    makeButton("Play");
-    makeButton("Land");
-    makeButton("Step");
-    makeButton("Halt");
-
-    while (!glfwWindowShouldClose(window)) {
-        float currentFrame = glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-
-        proccessInput(window);
-
-        while (!inputQueue.empty()) {
-            parseInput(droney, inputQueue.front());
-            inputQueue.pop();
-        }
-
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        ground.draw(projection, &camera);
-
-        setupShader(shader);
-        droney.draw(shader);
-
-        quader.setup(&fontShader, &quadShader, glm::vec2(width, height));
-        for (Button b : buttons) b.draw(quader);
-        quader.renderQuad(glm::vec2(0.9f, 0.0f), glm::vec2(1.0f, 1.0f), glm::vec4(0, 0, 0, 1));
-        droney.drawInstances(quader);
-
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
-
-
-    std::cout << "Close" << std::endl;
-    glfwTerminate();
-
-    killThread.store(true);
-
-    try {
-        thread.join();
-    } catch (std::system_error &e) { }
+    makeButton(LoopReturn::ARM, "Arm");
+    makeButton(LoopReturn::TAKEOFF, "Take Off");
+    makeButton(LoopReturn::STEP, "Step");
+    makeButton(LoopReturn::LAND, "Land");
+    makeButton(LoopReturn::HALT, "Halt");
 
     return 0;
+}
+
+LoopReturn loop() {
+    currentMessage = LoopReturn::NOTHING;
+
+    float currentFrame = glfwGetTime();
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
+
+    proccessInput(window);
+
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    ground->draw(projection, &camera);
+
+    setupShader(shader);
+    droney->draw(shader);
+
+    quader->setup(fontShader, quadShader, glm::vec2(width, height));
+    for (Button b : buttons) b.draw(quader);
+    quader->renderQuad(glm::vec2(0.9f, 0.0f), glm::vec2(1.0f, 1.0f), glm::vec4(0, 0, 0, 1));
+    droney->drawInstances(quader);
+
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+
+    return currentMessage;
+}
+
+void cleanup() {
+    glfwTerminate();
+}
+
+bool shouldClose() {
+    return glfwWindowShouldClose(window);
+}
+
+namespace pybind11 {
+    namespace detail {
+        template <>
+        struct type_caster<glm::vec3> {
+            PYBIND11_TYPE_CASTER(glm::vec3, io_name("Sequence[float]", "tuple[float, float, float]"));
+
+            static handle
+            cast(const glm::vec3 &vec, return_value_policy poly, handle parent) {
+                return pybind11::make_tuple(vec.x, vec.y, vec.z).release();
+            }
+
+            bool load(handle src, bool what) {
+                if (!pybind11::isinstance<pybind11::sequence>(src)) {
+                    return false;
+                }
+
+                auto seq = pybind11::reinterpret_borrow<pybind11::sequence>(src);
+                if (seq.size() != 3) {
+                    return false;
+                }
+
+                for (auto item : seq) {
+                    if (!pybind11::isinstance<pybind11::float_>(item) && !pybind11::isinstance<pybind11::int_>(item)) {
+                        return false;
+                    }
+                }
+
+                value.x = seq[0].cast<double>();
+                value.y = seq[0].cast<double>();
+                value.z = seq[0].cast<double>();
+
+                return true;
+            }
+        };
+    }
+}
+
+PYBIND11_MODULE(opengl_station, m) {
+    pybind11::enum_<LoopReturn>(m, "LoopReturn")
+        .value("Nothing", LoopReturn::NOTHING)
+        .value("Arm", LoopReturn::ARM)
+        .value("Takeoff", LoopReturn::TAKEOFF)
+        .value("Step", LoopReturn::STEP)
+        .value("Land", LoopReturn::LAND)
+        .value("Halt", LoopReturn::HALT);
+
+    m.def("setup", &setup);
+    m.def("loop", &loop);
+    m.def("cleanup", &cleanup);
+    m.def("should_close", &shouldClose);
+
+    m.def("set_expanse", &setExpanse);
+    m.def("set_color", &setColor);
+    m.def("set_pos", &setPos);
+    m.def("set_ip", &setIp);
+    m.def("set_state", &setState);
 }
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
@@ -201,47 +296,18 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     }
 }
 
-void setupShader(Shader &shader) {
-    shader.use();
+void setupShader(Shader *shader) {
+    shader->use();
 
-    shader.setVec3("viewPos", camera.pos);
-    shader.setMat4("view", camera.getViewMatrix());
-    shader.setMat4("projection", projection);
+    shader->setVec3("viewPos", camera.pos);
+    shader->setMat4("view", camera.getViewMatrix());
+    shader->setMat4("projection", projection);
 
-    shader.setMat4("model", model);
+    shader->setMat4("model", model);
 
     glm::mat3 normal = glm::transpose(glm::inverse(model));
-    int normalLoc = glGetUniformLocation(shader.ID, "normal");
+    int normalLoc = glGetUniformLocation(shader->ID, "normal");
     glUniformMatrix3fv(normalLoc, 1, GL_FALSE, glm::value_ptr(normal));
-}
-
-void parseInput(Model &model, std::string input) {
-    int id;
-    float minX, minY, minZ, maxX, maxY, maxZ;
-    float x, y, z;
-    float r, g, b, a;
-    int state;
-    char ip[21];
-
-    sscanf(input.c_str(), "%d:", &id);
-    input = input.substr(2);
-
-    if (sscanf(input.c_str(), "(%f, %f, %f, %f, %f, %f)", &minX, &minY, &minZ, &maxX, &maxY, &maxZ) == 6) {
-        model.minPos = glm::vec3(minX, minY, minZ);
-        model.maxPos = glm::vec3(maxX, maxY, maxZ);
-    } else if (sscanf(input.c_str(), "(%f, %f, %f, %f)", &r, &g, &b, &a) == 4) {
-        model.setColor(id, r, g, b, a);
-    } else if (sscanf(input.c_str(), "(%f, %f, %f)", &x, &y, &z) == 3) {
-        std::cout << "Position: " << x << " " << y << " " << z << std::endl;
-        model.setPos(id, x, y, z);
-    } else if (sscanf(input.c_str(), "%d.%d.%d.%d:%d", &state, &state, &state, &state, &state) == 5) {
-        sscanf(input.c_str(), "%s", ip);
-        model.setIp(id, ip);
-    } else if (sscanf(input.c_str(), "%d", &state) == 1) {
-        model.setState(id, (DroneState)state);
-    } else {
-        std::cout << "Failed to parse " << input << std::endl;
-    }
 }
 
 int setupWindow(GLFWwindow *&window) {
@@ -269,19 +335,6 @@ int setupWindow(GLFWwindow *&window) {
     }
 
     return 0;
-}
-
-void setupInputThread() {
-    thread = std::thread([] {
-        std::string input;
-        while (!killThread.load()) {
-            std::getline(std::cin, input);
-            if (input.size() > 0) {
-                inputQueue.push(input);
-            }
-        }
-    });
-    thread.detach();
 }
 
 void setGlViewport(int p_width, int p_height) {

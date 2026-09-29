@@ -12,7 +12,7 @@
 class Model {
 public:
     Model(const char *path);
-    void draw(Shader &shader);
+    void draw(Shader *shader);
 
     void addInstance(DroneData droneData);
     void addInstance(int id);
@@ -21,7 +21,8 @@ public:
     void setState(int id, DroneState state);
     void setIp(int id, char ip[16]);
 
-    void drawInstances(Quader quader);
+    void drawInstances(Quader *quader);
+    int getNum();
 
     glm::vec3 maxPos = glm::vec3(-100000.0f, -100000.0f, -100000.0f);
     glm::vec3 minPos = glm::vec3(100000.0f, 100000.0f, 100000.0f);

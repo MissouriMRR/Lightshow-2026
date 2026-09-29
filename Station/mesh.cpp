@@ -50,7 +50,7 @@ void Mesh::setupMesh(unsigned int instanceVBO) {
     glBindVertexArray(0);
 }
 
-void Mesh::draw(Shader &shader, int num) {
+void Mesh::draw(Shader *shader, int num) {
     glBindVertexArray(VAO);
     glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0, num);
     glBindVertexArray(0);

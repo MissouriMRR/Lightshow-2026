@@ -27,7 +27,7 @@
         "coordinates": [
           37.950177,
           -91.780905,
-          1500
+          100
         ],
         "time_delay": 0,
         "flight_speed": 5
@@ -36,7 +36,7 @@
         "coordinates": [
           37.950178,
           -91.780906,
-          1505
+          120
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -45,7 +45,7 @@
         "coordinates": [
           37.950179,
           -91.780907,
-          1510
+          140
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -54,7 +54,7 @@
         "coordinates": [
           37.950180,
           -91.780908,
-          1515
+          160
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -63,7 +63,7 @@
         "coordinates": [
           37.950181,
           -91.780909,
-          1520
+          180
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -74,7 +74,7 @@
         "coordinates": [
           35.950182,
           -91.780910,
-          1500
+          100
         ],
         "time_delay": 0,
         "flight_speed": 5
@@ -83,7 +83,7 @@
         "coordinates": [
           35.950183,
           -91.780911,
-          1505
+          120
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -92,7 +92,7 @@
         "coordinates": [
           35.950184,
           -91.780912,
-          1510
+          140
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -101,7 +101,7 @@
         "coordinates": [
           35.950185,
           -91.780913,
-          1515
+          160
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -110,7 +110,7 @@
         "coordinates": [
           35.950186,
           -91.780914,
-          1520
+          180
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -121,7 +121,7 @@
         "coordinates": [
           33.950187,
           -91.780915,
-          1500
+          100
         ],
         "time_delay": 0,
         "flight_speed": 5
@@ -130,7 +130,7 @@
         "coordinates": [
           33.950188,
           -91.780916,
-          1505
+          120
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -139,7 +139,7 @@
         "coordinates": [
           33.950189,
           -91.780917,
-          1510
+          140
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -148,7 +148,7 @@
         "coordinates": [
           33.950190,
           -91.780918,
-          1515
+          160
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -157,7 +157,7 @@
         "coordinates": [
           33.950191,
           -91.780919,
-          1520
+          180
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -168,7 +168,7 @@
         "coordinates": [
           31.950192,
           -91.780920,
-          1500
+          100
         ],
         "time_delay": 0,
         "flight_speed": 5
@@ -177,7 +177,7 @@
         "coordinates": [
           31.950193,
           -91.780921,
-          1505
+          120
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -186,7 +186,7 @@
         "coordinates": [
           31.950194,
           -91.780922,
-          1510
+          140
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -195,7 +195,7 @@
         "coordinates": [
           31.950195,
           -91.780923,
-          1515
+          160
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -204,7 +204,7 @@
         "coordinates": [
           31.950196,
           -91.780924,
-          1520
+          180
         ],
         "time_delay": 5,
         "flight_speed": 5
@@ -215,7 +215,7 @@
     "center_coordinates": [
       37.950177,
       -91.780905,
-      1500
+      100
     ],
     "max_width": 100,
     "max_length": 100,
