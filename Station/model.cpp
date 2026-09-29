@@ -27,7 +27,7 @@ Model::Model(const char *path) : meshes(), droneDatas() {
     loadModel(path);
 }
 
-void Model::draw(Shader& shader) {
+void Model::draw(Shader *shader) {
     for (unsigned int i = 0; i < meshes.size(); i++) {
         meshes[i].draw(shader, droneDatas.size());
     }
@@ -91,7 +91,7 @@ void Model::addInstance(DroneData droneData) {
 void Model::addInstance(int id) {
     addInstance(DroneData{
         glm::vec3(0, 0, 0),
-        glm::vec4((float)rand() / RAND_MAX, (float)rand() / RAND_MAX, (float)rand() / RAND_MAX, 1),
+        glm::vec4((float)rand() / RAND_MAX, (float)rand() / RAND_MAX, (float)rand() / RAND_MAX, 0.0),
         id,
         DroneState::GROUNDED,
         "999.999.999.999:9999",
@@ -122,6 +122,8 @@ void Model::setColor(int id, float r, float g, float b, float a) {
 void Model::setState(int id, DroneState state) {
     if (getInstance(id) == nullptr) addInstance(id);
 
+    getInstance(id)->color.a = state != (DroneState)0;
+    resetVBO();
     getInstance(id)->state = state;
 }
 
@@ -138,7 +140,7 @@ void Model::resetVBO() {
     glBufferData(GL_ARRAY_BUFFER, droneDatas.size() * sizeof(DroneData), &droneDatas[0], GL_STATIC_DRAW);
 }
 
-void Model::drawInstances(Quader quader) {
+void Model::drawInstances(Quader *quader) {
     for (int i = 0; i < droneDatas.size(); i++) {
         glm::vec3 color;
         switch (droneDatas[i].state) {
@@ -155,7 +157,10 @@ void Model::drawInstances(Quader quader) {
             break;
         }
 
-        quader.renderText(droneDatas[i].ip, 0.95f, 0.98f - i * 0.02f, 0.15f, color, HCentering::CENTER, VCentering::BOTTOM, 1.0f);
+        quader->renderText(droneDatas[i].ip, 0.95f, 0.98f - i * 0.02f, 0.15f, color, HCentering::CENTER, VCentering::BOTTOM, 1.0f);
     }
 }
 
+int Model::getNum() {
+    return droneDatas[0].color.a;
+}

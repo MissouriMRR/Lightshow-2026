@@ -40,7 +40,7 @@ public:
     std::vector<unsigned int> indices;
 
     Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, unsigned int instanceVBO);
-    void draw(Shader &shader, int num);
+    void draw(Shader *shader, int num);
 
 private:
     unsigned int VAO, VBO, EBO;

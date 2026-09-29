@@ -43,7 +43,8 @@ void Ground::draw(glm::mat4 projection, Camera *camera) {
         planeShader.setMat4("view", camera->getViewMatrix());
         planeShader.setMat4("projection", projection);
 
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(-.5f, -0.01f, -.5f));
+        float scale = 10.0f;
+        glm::mat4 model = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(scale, 1.0f, scale)), glm::vec3(-.5f, -0.01f, -.5f));
         planeShader.setMat4("model", model);
 
         glm::mat3 normal = glm::transpose(glm::inverse(model));

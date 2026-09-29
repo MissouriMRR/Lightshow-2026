@@ -31,6 +31,8 @@ class StationServer:
     add: int
     current_message: Message | None
 
+    go: bool
+
     drone_connect_listener: Callable[[str], None]
     arm_listener: Callable[[str, bool], None]
     drone_position_listener: Callable[[str, dronekit.LocationGlobalRelative], None]
@@ -73,6 +75,8 @@ class StationServer:
 
         self.current_message = None
 
+        self.go = True
+
         # No-op until the GUI registers real listeners (see set_drone_listener etc.)
         self.drone_connect_listener = lambda _drone_id: None
         self.arm_listener = lambda _drone_id, _armed: None
@@ -82,7 +86,7 @@ class StationServer:
         await asyncio.gather(self.initial_connect(), self.process_messages())
 
     async def process_messages(self) -> None:
-        while True:
+        while self.go:
             await self.connection.tick()
 
             match self.current_message:
@@ -101,6 +105,9 @@ class StationServer:
 
             self.current_message = None
             await asyncio.sleep(0)
+
+    def stop(self):
+        self.go = False
 
     def set_drone_listeners(
         self,
