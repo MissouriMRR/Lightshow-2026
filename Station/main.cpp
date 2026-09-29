@@ -1,29 +1,22 @@
+#include "main.h"
+
 #include <cmath>
 #include <cstdio>
 #include <ctime>
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include <iostream>
 #include "mesh.h"
 #include "stb_image.h"
-#include <atomic>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include <ostream>
-#include <queue>
 #include <string>
-#include <system_error>
-#include <thread>
 #include <vector>
-
-#include "pybind11/pybind11.h"
 
 #include "quader.h"
 #include "camera.h"
-#include "shader.h"
 #include "model.h"
 #include "button.h"
 #include "ground.h"
@@ -34,14 +27,6 @@ const int SIDE_PANEL_SIZE = 100;
 
 int width = START_WIDTH;
 int height = START_HEIGHT;
-
-void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-void proccessInput(GLFWwindow* window);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void setupShader(Shader *shader);
-void parseInput(std::string input);
-int setupWindow(GLFWwindow *&window);
-void setGlViewport(int width, int height);
 
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
@@ -69,15 +54,16 @@ Quader *quader;
 
 Ground *ground;
 
-enum class LoopReturn {
-    NOTHING,
-    ARM,
-    TAKEOFF,
-    STEP,
-    LAND,
-    HALT
-};
 LoopReturn currentMessage;
+
+int main() {
+    setup();
+
+    while (!shouldClose()) {
+        loop();
+    }
+    cleanup();
+}
 
 void setExpanse(glm::vec3 min, glm::vec3 max) {
     droney->minPos = min;
@@ -185,64 +171,6 @@ void cleanup() {
 
 bool shouldClose() {
     return glfwWindowShouldClose(window);
-}
-
-namespace pybind11 {
-    namespace detail {
-        template <>
-        struct type_caster<glm::vec3> {
-            PYBIND11_TYPE_CASTER(glm::vec3, io_name("Sequence[float]", "tuple[float, float, float]"));
-
-            static handle
-            cast(const glm::vec3 &vec, return_value_policy poly, handle parent) {
-                return pybind11::make_tuple(vec.x, vec.y, vec.z).release();
-            }
-
-            bool load(handle src, bool what) {
-                if (!pybind11::isinstance<pybind11::sequence>(src)) {
-                    return false;
-                }
-
-                auto seq = pybind11::reinterpret_borrow<pybind11::sequence>(src);
-                if (seq.size() != 3) {
-                    return false;
-                }
-
-                for (auto item : seq) {
-                    if (!pybind11::isinstance<pybind11::float_>(item) && !pybind11::isinstance<pybind11::int_>(item)) {
-                        return false;
-                    }
-                }
-
-                value.x = seq[0].cast<double>();
-                value.y = seq[0].cast<double>();
-                value.z = seq[0].cast<double>();
-
-                return true;
-            }
-        };
-    }
-}
-
-PYBIND11_MODULE(opengl_station, m) {
-    pybind11::enum_<LoopReturn>(m, "LoopReturn")
-        .value("Nothing", LoopReturn::NOTHING)
-        .value("Arm", LoopReturn::ARM)
-        .value("Takeoff", LoopReturn::TAKEOFF)
-        .value("Step", LoopReturn::STEP)
-        .value("Land", LoopReturn::LAND)
-        .value("Halt", LoopReturn::HALT);
-
-    m.def("setup", &setup);
-    m.def("loop", &loop);
-    m.def("cleanup", &cleanup);
-    m.def("should_close", &shouldClose);
-
-    m.def("set_expanse", &setExpanse);
-    m.def("set_color", &setColor);
-    m.def("set_pos", &setPos);
-    m.def("set_ip", &setIp);
-    m.def("set_state", &setState);
 }
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height) {

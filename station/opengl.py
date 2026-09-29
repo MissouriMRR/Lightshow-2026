@@ -68,7 +68,7 @@ class OpenGLWindow:
                 edge_it(lambda p: p.x), edge_it(lambda p: p.y), edge_it(lambda p: p.z)
             )
 
-        return (edge_rel(lambda vals: min(vals)), edge_rel(lambda vals: max(vals)))
+        return (edge_rel(min), edge_rel(max))
 
     def place_in_expanse(self, position: Point3d) -> Point3d:
         range = self.expanse[1] - self.expanse[0]
