@@ -1,22 +1,19 @@
 #include "button.h"
-#include "glm/glm.hpp"
 #include "quader.h"
-#include <iostream>
 
-void Button::checkClick(float mousex, float mousey) {
+void Button::checkClick(float mousex, float mousey, bool shift, bool ctrl) {
     mousey = 1 - mousey;
     if (!clicked 
             && xpos - width / 2 < mousex && mousex < xpos + width / 2
             && ypos - height / 2 < mousey && mousey < ypos + height / 2) {
-        function();
+        function(shift, ctrl);
         clicked = true;
     }
 }
 
 void Button::draw(Quader *q) {
-    const float brightness = 0.5f;
-    q->renderQuad(glm::vec2(xpos - width / 2, ypos - height / 2), glm::vec2(xpos + width / 2, ypos + height / 2), glm::vec4(brightness, brightness, brightness, 1));
-    q->renderText(text, xpos, ypos, 0.3f, glm::vec3(1, 1, 1), HCentering::CENTER, VCentering::CENTER, 1);
+    q->renderQuad(glm::vec2(xpos - width / 2, ypos - height / 2), glm::vec2(xpos + width / 2, ypos + height / 2), color, priority);
+    q->renderText(text, xpos, ypos, textSize, textColor, HCentering::CENTER, VCentering::CENTER, priority + 0.1);
 }
 
 void Button::setClicked(bool clicked) {

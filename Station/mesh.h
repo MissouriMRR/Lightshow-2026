@@ -9,11 +9,9 @@
 #include "shader.h"
 
 enum class DroneState {
-    GROUNDED,
+    DISCONNECTED,
+    CONNECTED,
     ARMED,
-    LIFTED,
-    BETWEEN,
-    HAPPY
 };
 
 struct DroneData {

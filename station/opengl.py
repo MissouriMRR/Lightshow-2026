@@ -48,10 +48,10 @@ class OpenGLWindow:
         self.station_server.stop()
 
     def drone_connect_listener(self, drone_id: str):
-        opengl_station.set_state(int(drone_id), 1)
+        opengl_station.set_state(int(drone_id), opengl_station.DroneState.Connected)
 
     def arm_listener(self, drone_id: str, armed: bool):
-        opengl_station.set_state(int(drone_id), 2 if armed else 1)
+        opengl_station.set_state(int(drone_id), opengl_station.DroneState.Armed if armed else opengl_station.DroneState.Disconnected)
 
     def drone_position_listener(self, drone_id: str, position: dronekit.LocationGlobalRelative):
         placed = self.place_in_expanse(loc_to_point(position))

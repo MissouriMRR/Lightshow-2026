@@ -1,4 +1,5 @@
 #include "main.h"
+#include "mesh.h"
 #include "pybind11/pybind11.h"
 
 namespace pybind11 {
@@ -46,6 +47,11 @@ PYBIND11_MODULE(opengl_station, m) {
         .value("Step", LoopReturn::STEP)
         .value("Land", LoopReturn::LAND)
         .value("Halt", LoopReturn::HALT);
+
+    pybind11::enum_<DroneState>(m, "DoneState")
+        .value("Disconnected", DroneState::DISCONNECTED)
+        .value("Connected", DroneState::CONNECTED)
+        .value("Armed", DroneState::ARMED);
 
     m.def("setup", &setup);
     m.def("loop", &loop);

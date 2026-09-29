@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <ctime>
 #include <iostream>
+#include "GLFW/glfw3.h"
 #include "mesh.h"
 #include "stb_image.h"
 
@@ -33,6 +34,7 @@ float lastFrame = 0.0f;
 
 float lastX = 400.0f, lastY = 300.0f;
 bool rightMouseDown = false, leftMouseDown = false;
+bool shift = false, ctrl = false;
 
 glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)START_WIDTH / START_HEIGHT, 0.1f, 100.0f);
 glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
@@ -58,6 +60,11 @@ LoopReturn currentMessage;
 
 int main() {
     setup();
+    droney->setState(1, (DroneState)1);
+    droney->setState(2, (DroneState)1);
+    droney->setState(3, (DroneState)1);
+    droney->setState(4, (DroneState)1);
+    droney->setState(5, (DroneState)1);
 
     while (!shouldClose()) {
         loop();
@@ -87,8 +94,8 @@ void setIp(int id, std::string ip) {
     droney->setIp(id, c_ip);
 }
 
-void setState(int id, int state) {
-    droney->setState(id, (DroneState)state);
+void setState(int id, DroneState state) {
+    droney->setState(id, state);
 }
 
 int setup() {
@@ -124,7 +131,7 @@ int setup() {
     int i = 0;
 
     auto makeButton = [&i, buttonWidth, buttonHeight, padding](LoopReturn message, std::string name) {
-        buttons.push_back(Button(buttonWidth / 2 + buttonWidth * i, 1 - buttonHeight / 2 - padding, buttonWidth - padding, buttonHeight, [message, name] {currentMessage = message;}, name));
+        buttons.push_back(Button(buttonWidth / 2 + buttonWidth * i, 1 - buttonHeight / 2 - padding, buttonWidth - padding, buttonHeight, [message, name](bool, bool) {currentMessage = message;}, name));
         i++;
     };
 
@@ -187,8 +194,9 @@ void proccessInput(GLFWwindow* window) {
         glfwGetCursorPos(window, &xpos, &ypos);
         if (leftMouseDown == false) {
             for (Button &b : buttons) {
-                b.checkClick(xpos / width, ypos / height);
+                b.checkClick(xpos / width, ypos / height, shift, ctrl);
             }
+            droney->checkButtons(xpos / width, ypos / height, shift, ctrl);
         }
 
         leftMouseDown = true;
@@ -202,6 +210,12 @@ void proccessInput(GLFWwindow* window) {
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) rightMouseDown = true;
     else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) rightMouseDown = false;
+
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) shift = true;
+    else if (glfwGetMouseButton(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE || glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) shift = false;
+
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) ctrl = true;
+    else if (glfwGetMouseButton(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE || glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE) ctrl = false;
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
