@@ -12,8 +12,11 @@
 #include <istream>
 #include <ostream>
 #include <string>
+#include <tuple>
 #include <vector>
+#include <ranges>
 
+#include "glm/gtc/matrix_transform.hpp"
 #include "mesh.h"
 #include "shader.h"
 #include "stb_image.h"
@@ -22,7 +25,10 @@
 const float buttonHeight = 0.02f;
 const float buttonWidth = 0.1f;
 
-Model::Model(const char *path) : meshes(), droneDatas(), ipButtons(), currentDrones(), offButton(Button([this](bool, bool) {currentDrones.clear();}, "", 0.0f)) {
+Model::Model() : meshes(), droneDatas(), ipButtons(), currentDrones(), offButton(Button([this](bool, bool) {currentDrones.clear(); lastIdx = -1;}, "", 0.0f)) {
+}
+
+Model::Model(const char *path) : meshes(), droneDatas(), ipButtons(), currentDrones(), offButton(Button([this](bool, bool) {currentDrones.clear(); lastIdx = -1;}, "", 0.0f)) {
     VBO = 0;
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -173,7 +179,7 @@ void Model::placeButton() {
     offButton.ypos -= buttonHeight * 0.5f;
 }
 
-void Model::drawInstances(Quader *quader) {
+void Model::drawInstances(Quader *quader, glm::mat4 projection, Camera *camera) {
     for (int i = 0; i < droneDatas.size(); i++) {
         glm::vec3 color;
         switch (droneDatas[i].state) {
@@ -192,6 +198,7 @@ void Model::drawInstances(Quader *quader) {
         ipButtons[i].textColor = color;
         ipButtons[i].color = findCurrentDrone(i) == currentDrones.end() ? glm::vec4(0, 0, 0, 1) : glm::vec4(1, 1, 0, 1);
         ipButtons[i].draw(quader);
+
     }
 }
 
@@ -208,38 +215,64 @@ std::vector<int>::iterator Model::findCurrentDrone(int idx) {
 }
 
 void Model::setCurrentDrone(int idx, bool shift, bool ctrl) {
-    int lastIdx = currentDrones.size() > 0 ? currentDrones[currentDrones.size() - 1] : -1;
-
     auto idxLoc = findCurrentDrone(idx);
-    bool adding = idxLoc == currentDrones.end() || currentDrones.size() > 0;
 
     if (!shift) {
         currentDrones.clear();
     }
 
     if (ctrl && lastIdx != -1) {
-        if (lastIdx > idx) {
-            int tmp = lastIdx;
-            lastIdx = idx;
-            idx = tmp;
-        }
-
-        for (int i = lastIdx; i < idx; i++) {
+        for (int i = std::min(lastIdx, idx); i <= std::max(lastIdx, idx); i++) {
             std::vector<int>::iterator it = findCurrentDrone(i);
 
             if (it == currentDrones.end()) currentDrones.push_back(i);
         }
+    } else {
+        if (idxLoc != currentDrones.end() && shift && !ctrl) currentDrones.erase(idxLoc);
+        else currentDrones.push_back(idx);
     }
 
-    if (adding) currentDrones.push_back(idx);
-    else if (shift) currentDrones.erase(idxLoc);
+    lastIdx = idx;
 }
 
-void Model::checkButtons(float mousex, float mousey, bool shift, bool ctrl) {
+void Model::checkButtons(float mousex, float mousey, bool shift, bool ctrl, Camera *camera, glm::mat4 projection) {
     for (Button b : ipButtons) {
         b.setClicked(false);
         b.checkClick(mousex, mousey, shift, ctrl);
     }
     offButton.setClicked(false);
     offButton.checkClick(mousex, mousey, shift, ctrl);
+
+    mousey = 1.0f - mousey;
+    glm::mat4 cameraMat = camera->getViewMatrix();
+    glm::mat4 rotlessCamera = glm::mat4(1.0f);
+    rotlessCamera[3][0] = cameraMat[3][0];
+    rotlessCamera[3][1] = cameraMat[3][1];
+    rotlessCamera[3][2] = cameraMat[3][2];
+    rotlessCamera[3][3] = cameraMat[3][3];
+
+    std::vector<std::tuple<glm::vec4, glm::vec4, int>> positions;
+    for (int i = 0; i < droneDatas.size(); i++) {
+        glm::vec3 point = camera->getViewMatrix() * glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f)), droneDatas[i].position) * glm::vec4(0, 0, 0, 1);
+
+        float boxSize = 0.3;
+        glm::vec4 result = projection * (glm::vec4(point, 0) + glm::vec4(-boxSize, -boxSize, 0, 1));
+        result /= result.w;
+        result += glm::vec4(1.0);
+        result *= 0.5f;
+        glm::vec4 result2 = projection * (glm::vec4(point, 0) + glm::vec4(boxSize, boxSize, 0, 1));
+        result2 /= result2.w;
+        result2 += glm::vec4(1.0);
+        result2 *= 0.5f;
+        positions.push_back(std::make_tuple(result, result2, i));
+    }
+
+    std::sort(positions.begin(), positions.end(), [](auto a, auto b){return std::get<0>(b).z > std::get<0>(a).z;});
+    for (auto [result, result2, i] : positions) {
+        if (result.x < mousex && mousex < result2.x
+            && result.y < mousey && mousey < result2.y) {
+            setCurrentDrone(i, shift, ctrl);
+            break;
+        }
+    }
 }

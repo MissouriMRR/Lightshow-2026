@@ -62,9 +62,9 @@ int main() {
     setup();
     droney->setState(1, (DroneState)1);
     droney->setState(2, (DroneState)1);
-    droney->setState(3, (DroneState)1);
-    droney->setState(4, (DroneState)1);
-    droney->setState(5, (DroneState)1);
+
+    droney->setPos(1, 0, 0, 0);
+    droney->setPos(2, 0, 10, 0);
 
     while (!shouldClose()) {
         loop();
@@ -164,7 +164,7 @@ LoopReturn loop() {
     quader->setup(fontShader, quadShader, glm::vec2(width, height));
     for (Button b : buttons) b.draw(quader);
     quader->renderQuad(glm::vec2(0.9f, 0.0f), glm::vec2(1.0f, 1.0f), glm::vec4(0, 0, 0, 1));
-    droney->drawInstances(quader);
+    droney->drawInstances(quader, projection, &camera);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -196,7 +196,7 @@ void proccessInput(GLFWwindow* window) {
             for (Button &b : buttons) {
                 b.checkClick(xpos / width, ypos / height, shift, ctrl);
             }
-            droney->checkButtons(xpos / width, ypos / height, shift, ctrl);
+            droney->checkButtons(xpos / width, ypos / height, shift, ctrl, &camera, projection);
         }
 
         leftMouseDown = true;

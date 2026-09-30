@@ -109,3 +109,44 @@ target_sources(opengl_station
         model.cpp
         ground.cpp
 )
+
+add_library(source_lib OBJECT)
+
+target_include_directories(source_lib
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+target_link_libraries(source_lib
+    PUBLIC
+        freetype 
+        assimp 
+        glfw 
+        GL 
+        m 
+        X11 
+        pthread 
+        Xi 
+        Xrandr 
+        dl 
+        z 
+        bz2 
+        png 
+        brotlidec
+)
+
+target_sources(source_lib
+    PRIVATE
+        button.cpp
+        color.cpp
+        mesh.cpp
+        quader.cpp
+        shader.cpp
+        utils.cpp
+        glad.c
+        stbi_image.cpp
+        model.cpp
+        ground.cpp
+)
+
+add_subdirectory(tests)
