@@ -935,12 +935,6 @@ wheels = [
 name = "station"
 version = "0.1.0"
 source = { virtual = "Station" }
-dependencies = [
-    { name = "pybind11" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "pybind11", specifier = ">=3.1.0" }]
 
 [[package]]
 name = "svgpathtools"

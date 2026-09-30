@@ -15,10 +15,10 @@
 #include <assimp/scene.h>
 #include "camera.h"
 
-class Model {
+class Drone {
 public:
-    Model();
-    Model(const char *path);
+    Drone();
+    Drone(const char *path);
     void draw(Shader *shader);
 
     void addInstance(DroneData droneData);
@@ -26,14 +26,16 @@ public:
     void setPos(int id, float x, float y, float z);
     void setColor(int id, float r, float g, float b, float a);
     void setState(int id, DroneState state);
-    void setIp(int id, char ip[21]);
+    void setIp(int id, std::string ip);
 
     void drawInstances(Quader *quader, glm::mat4 projection, Camera *camera);
     int getNum();
 
     std::function<void(bool, bool)> curryButton(int idx);
     void setCurrentDrone(int idx, bool shift, bool ctrl);
-    void checkButtons(float mousex, float mousey, bool shift, bool ctrl, Camera *camera, glm::mat4 projection);
+    void resetCurrentDrones();
+    bool checkButtons(float mousex, float mousey, bool shift, bool ctrl);
+    bool checkDrones(float mousex, float mousey, bool shift, bool ctrl, Camera *camera, glm::mat4 projection);
 
     glm::vec3 maxPos = glm::vec3(-100000.0f, -100000.0f, -100000.0f);
     glm::vec3 minPos = glm::vec3(100000.0f, 100000.0f, 100000.0f);
@@ -56,7 +58,6 @@ private:
     std::vector<Mesh> meshes;
     std::string directory;
     std::vector<Button> ipButtons;
-    Button offButton;
     int lastIdx = -1;
 };
 

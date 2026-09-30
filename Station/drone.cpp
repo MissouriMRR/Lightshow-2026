@@ -1,4 +1,4 @@
-#include "model.h"
+#include "drone.h"
 #include "assimp/vector3.h"
 #include "glm/detail/type_vec.hpp"
 
@@ -25,30 +25,25 @@
 const float buttonHeight = 0.02f;
 const float buttonWidth = 0.1f;
 
-Model::Model() : meshes(), droneDatas(), ipButtons(), currentDrones(), offButton(Button([this](bool, bool) {currentDrones.clear(); lastIdx = -1;}, "", 0.0f)) {
+Drone::Drone() : meshes(), droneDatas(), ipButtons(), currentDrones() {
 }
 
-Model::Model(const char *path) : meshes(), droneDatas(), ipButtons(), currentDrones(), offButton(Button([this](bool, bool) {currentDrones.clear(); lastIdx = -1;}, "", 0.0f)) {
+Drone::Drone(const char *path) : meshes(), droneDatas(), ipButtons(), currentDrones() {
     VBO = 0;
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, droneDatas.size() * sizeof(DroneData), &(droneDatas[0]), GL_STATIC_DRAW);
 
-    offButton.xpos = 0.95f;
-    offButton.ypos = 0.5f - buttonHeight * 0.5f;
-    offButton.width = buttonWidth;
-    offButton.height = 1.0f;
-
     loadModel(path);
 }
 
-void Model::draw(Shader *shader) {
+void Drone::draw(Shader *shader) {
     for (unsigned int i = 0; i < meshes.size(); i++) {
         meshes[i].draw(shader, droneDatas.size());
     }
 }
 
-void Model::loadModel(std::string path) {
+void Drone::loadModel(std::string path) {
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
 
@@ -61,7 +56,7 @@ void Model::loadModel(std::string path) {
     processNode(scene->mRootNode, scene);
 }
 
-void Model::processNode(aiNode *node, const aiScene *scene) {
+void Drone::processNode(aiNode *node, const aiScene *scene) {
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
         meshes.push_back(processMesh(mesh, scene));
@@ -72,7 +67,7 @@ void Model::processNode(aiNode *node, const aiScene *scene) {
     }
 }
 
-Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
+Mesh Drone::processMesh(aiMesh *mesh, const aiScene *scene) {
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
 
@@ -98,14 +93,14 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
     return Mesh(vertices, indices, VBO);
 }
 
-void Model::addInstance(DroneData droneData) {
+void Drone::addInstance(DroneData droneData) {
     ipButtons.push_back(Button(curryButton(droneDatas.size()), droneData.ip, 0.15f));
     droneDatas.push_back(droneData);
     placeButton();
     resetVBO();
 }
 
-void Model::addInstance(int id) {
+void Drone::addInstance(int id) {
     addInstance(DroneData{
         glm::vec3(0, 0, 0),
         glm::vec4((float)rand() / RAND_MAX, (float)rand() / RAND_MAX, (float)rand() / RAND_MAX, 0.0),
@@ -115,35 +110,35 @@ void Model::addInstance(int id) {
     });
 }
 
-DroneData* Model::getInstance(int id) {
+DroneData* Drone::getInstance(int id) {
     for (int i = 0; i < droneDatas.size(); i++) {
         if (droneDatas[i].id == id) return &droneDatas[i];
     }
     return nullptr;
 }
 
-Button* Model::getButton(int id) {
+Button* Drone::getButton(int id) {
     for (int i = 0; i < droneDatas.size(); i++) {
         if (droneDatas[i].id == id) return &ipButtons[i];
     }
     return nullptr;
 }
 
-void Model::setPos(int id, float x, float y, float z) {
+void Drone::setPos(int id, float x, float y, float z) {
     if (getInstance(id) == nullptr) addInstance(id);
 
     getInstance(id)->position = glm::vec3(x, y, z);
     resetVBO();
 }
 
-void Model::setColor(int id, float r, float g, float b, float a) {
+void Drone::setColor(int id, float r, float g, float b, float a) {
     if (getInstance(id) == nullptr) addInstance(id);
 
     getInstance(id)->color = glm::vec4(r, g, b, a);
     resetVBO();
 }
 
-void Model::setState(int id, DroneState state) {
+void Drone::setState(int id, DroneState state) {
     if (getInstance(id) == nullptr) addInstance(id);
 
     getInstance(id)->color.a = state != DroneState::DISCONNECTED;
@@ -151,21 +146,19 @@ void Model::setState(int id, DroneState state) {
     getInstance(id)->state = state;
 }
 
-void Model::setIp(int id, char ip[21]) {
+void Drone::setIp(int id, std::string ip) {
     if (getInstance(id) == nullptr) addInstance(id);
 
     getButton(id)->text = ip;
-    for (int i = 0; i < 21; i++) {
-        getInstance(id)->ip[i] = ip[i];
-    }
+    getInstance(id)->ip = ip;
 }
 
-void Model::resetVBO() {
+void Drone::resetVBO() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, droneDatas.size() * sizeof(DroneData), &droneDatas[0], GL_STATIC_DRAW);
 }
 
-void Model::placeButton() {
+void Drone::placeButton() {
     int idx = droneDatas.size() - 1;
     Button &toAdd = ipButtons[idx];
 
@@ -174,12 +167,9 @@ void Model::placeButton() {
     toAdd.ypos = 0.98f - idx * 0.02f;
     toAdd.width = buttonWidth;
     toAdd.height = buttonHeight;
-
-    offButton.height -= buttonHeight;
-    offButton.ypos -= buttonHeight * 0.5f;
 }
 
-void Model::drawInstances(Quader *quader, glm::mat4 projection, Camera *camera) {
+void Drone::drawInstances(Quader *quader, glm::mat4 projection, Camera *camera) {
     for (int i = 0; i < droneDatas.size(); i++) {
         glm::vec3 color;
         switch (droneDatas[i].state) {
@@ -202,19 +192,19 @@ void Model::drawInstances(Quader *quader, glm::mat4 projection, Camera *camera) 
     }
 }
 
-int Model::getNum() {
+int Drone::getNum() {
     return droneDatas[0].color.a;
 }
 
-std::function<void(bool, bool)> Model::curryButton(int idx) {
+std::function<void(bool, bool)> Drone::curryButton(int idx) {
     return [this, idx](bool shift, bool ctrl) {setCurrentDrone(idx, shift, ctrl);};
 }
 
-std::vector<int>::iterator Model::findCurrentDrone(int idx) {
+std::vector<int>::iterator Drone::findCurrentDrone(int idx) {
     return std::find(currentDrones.begin(), currentDrones.end(), idx);
 }
 
-void Model::setCurrentDrone(int idx, bool shift, bool ctrl) {
+void Drone::setCurrentDrone(int idx, bool shift, bool ctrl) {
     auto idxLoc = findCurrentDrone(idx);
 
     if (!shift) {
@@ -235,13 +225,19 @@ void Model::setCurrentDrone(int idx, bool shift, bool ctrl) {
     lastIdx = idx;
 }
 
-void Model::checkButtons(float mousex, float mousey, bool shift, bool ctrl, Camera *camera, glm::mat4 projection) {
+bool Drone::checkButtons(float mousex, float mousey, bool shift, bool ctrl) {
+    bool out = false;
+
     for (Button b : ipButtons) {
-        b.setClicked(false);
-        b.checkClick(mousex, mousey, shift, ctrl);
+        out |= b.checkClick(mousex, mousey, shift, ctrl);
     }
-    offButton.setClicked(false);
-    offButton.checkClick(mousex, mousey, shift, ctrl);
+
+
+    return out;
+}
+
+bool Drone::checkDrones(float mousex, float mousey, bool shift, bool ctrl, Camera *camera, glm::mat4 projection) {
+    bool out = false;
 
     mousey = 1.0f - mousey;
     glm::mat4 cameraMat = camera->getViewMatrix();
@@ -271,8 +267,15 @@ void Model::checkButtons(float mousex, float mousey, bool shift, bool ctrl, Came
     for (auto [result, result2, i] : positions) {
         if (result.x < mousex && mousex < result2.x
             && result.y < mousey && mousey < result2.y) {
-            setCurrentDrone(i, shift, ctrl);
+            setCurrentDrone(i, shift, false);
+            out = true;
             break;
         }
     }
+
+    return out;
+}
+
+void Drone::resetCurrentDrones() {
+    currentDrones.clear();
 }

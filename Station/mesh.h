@@ -19,7 +19,7 @@ struct DroneData {
     glm::vec4 color;
     int id;
     DroneState state;
-    char ip[21];
+    std::string ip;
 };
 
 struct InstanceDatum {

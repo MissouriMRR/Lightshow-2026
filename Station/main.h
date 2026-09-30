@@ -19,11 +19,12 @@ enum class LoopReturn {
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void proccessInput(GLFWwindow* window);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void setupShader(Shader *shader);
 void parseInput(std::string input);
 int setupWindow(GLFWwindow *&window);
 void setGlViewport(int width, int height);
+void getScaledCursorPos(GLFWwindow *window, double *xpos, double *ypos);
 
 
 int setup();

@@ -18,7 +18,7 @@
 
 #include "quader.h"
 #include "camera.h"
-#include "model.h"
+#include "drone.h"
 #include "button.h"
 #include "ground.h"
 
@@ -33,8 +33,7 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 float lastX = 400.0f, lastY = 300.0f;
-bool rightMouseDown = false, leftMouseDown = false;
-bool shift = false, ctrl = false;
+bool leftMouseDown = false;
 
 glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)START_WIDTH / START_HEIGHT, 0.1f, 100.0f);
 glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
@@ -49,14 +48,13 @@ GLFWwindow *window;
 Shader *fontShader;
 Shader *quadShader;
 
-Model *droney;
+Drone *droney;
 Shader *shader;
-
 Quader *quader;
-
 Ground *ground;
 
 LoopReturn currentMessage;
+bool click = false, drag = false;
 
 int main() {
     setup();
@@ -66,8 +64,29 @@ int main() {
     droney->setPos(1, 0, 0, 0);
     droney->setPos(2, 0, 10, 0);
 
+    LoopReturn result;
     while (!shouldClose()) {
-        loop();
+        result = loop();
+        switch (result) {
+            case LoopReturn::ARM:
+                std::cout << "ARM\n";
+                break;
+            case LoopReturn::TAKEOFF:
+                std::cout << "TAKEOFF\n";
+                break;
+            case LoopReturn::STEP:
+                std::cout << "STEP\n";
+                break;
+            case LoopReturn::LAND:
+                std::cout << "LAND\n";
+                break;
+            case LoopReturn::HALT:
+                std::cout << "HALT\n";
+                break;
+            case LoopReturn::NOTHING:
+                break;
+        }
+
     }
     cleanup();
 }
@@ -86,12 +105,7 @@ void setPos(int id, float x, float y, float z) {
 }
 
 void setIp(int id, std::string ip) {
-    //TODO maybe not two copies and also having 21 extra bytes for the shaders to eat
-    char c_ip[21];
-    for (int i = 0; i < 21 && i < ip.length(); i++) {
-        c_ip[i] = ip[i];
-    }
-    droney->setIp(id, c_ip);
+    droney->setIp(id, ip);
 }
 
 void setState(int id, DroneState state) {
@@ -119,7 +133,7 @@ int setup() {
     fontShader = new Shader("shaders/fontVertex.glsl", "shaders/fontFragment.glsl");
     quadShader = new Shader("shaders/fontVertex.glsl", "shaders/quadFragment.glsl");
 
-    droney = new Model("droney/droney.obj");
+    droney = new Drone("droney/droney.obj");
     shader = new Shader("shaders/vertex.glsl", "shaders/fragment.glsl");
 
     quader = new Quader();
@@ -184,45 +198,57 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
     setGlViewport(width, height);
 }
 
-void proccessInput(GLFWwindow* window) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
+void checkButtons() {
+    double xpos, ypos;
+    getScaledCursorPos(window, &xpos, &ypos);
 
-    const float cameraSpeed = 2.5f * deltaTime;
+    click = true;
+    bool shift = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT);
+    bool ctrl = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL);
 
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-        double xpos, ypos;
-        glfwGetCursorPos(window, &xpos, &ypos);
-        if (leftMouseDown == false) {
-            for (Button &b : buttons) {
-                b.checkClick(xpos / width, ypos / height, shift, ctrl);
-            }
-            droney->checkButtons(xpos / width, ypos / height, shift, ctrl, &camera, projection);
-        }
-
-        leftMouseDown = true;
-    } else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
-        for (Button &b : buttons) {
-            b.setClicked(false);
-        }
-
-        leftMouseDown = false;
+    for (Button &b : buttons) {
+        click &= !b.checkClick(xpos, ypos, shift, ctrl);
     }
-
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) rightMouseDown = true;
-    else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) rightMouseDown = false;
-
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) shift = true;
-    else if (glfwGetMouseButton(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE || glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) shift = false;
-
-    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) ctrl = true;
-    else if (glfwGetMouseButton(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE || glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE) ctrl = false;
+    click &= !droney->checkButtons(xpos, ypos, shift, ctrl);
+    drag = click && xpos < 0.9;
 }
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+void checkRelease() {
+    double xpos, ypos;
+    getScaledCursorPos(window, &xpos, &ypos);
+    bool shift = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT);
+    bool ctrl = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL);
+
+    if (!droney->checkDrones(xpos, ypos, shift, ctrl, &camera, projection)) {
+        droney->resetCurrentDrones();
+    }
+}
+
+void getScaledCursorPos(GLFWwindow *window, double *xpos, double *ypos) {
+    double xposRaw, yposRaw;
+    glfwGetCursorPos(window, &xposRaw, &yposRaw);
+    *xpos = xposRaw / width;
+    *ypos = yposRaw / height;
+}
+
+void proccessInput(GLFWwindow* window) {
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE)) droney->resetCurrentDrones();
+
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
+        if (leftMouseDown == false) checkButtons();
+        leftMouseDown = true;
+    } else {
+        if (click) checkRelease();
+        leftMouseDown = false;
+    }
+}
+
+void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     float xOffset = lastX - xpos;
     float yOffset = ypos - lastY;
     lastX = xpos;
     lastY = ypos;
+    click = false;
 
     const float rotSensitivity = 0.005f;
     const float panSensitivity = 0.4f;
@@ -230,10 +256,10 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     int width, height;
     glfwGetWindowSize(window, &width, &height);
 
-    if (leftMouseDown) {
+    if (leftMouseDown && drag) {
         camera.rotate(xOffset, yOffset);
     }
-    if (rightMouseDown) {
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
         camera.translate(glm::vec3(xOffset * START_WIDTH / width, yOffset * START_HEIGHT / height, 0) * panSensitivity);
     }
 }
@@ -269,7 +295,7 @@ int setupWindow(GLFWwindow *&window) {
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetCursorPosCallback(window, mouseCallback);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize glad" << std::endl;
