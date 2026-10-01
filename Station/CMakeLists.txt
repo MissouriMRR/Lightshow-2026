@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 3.23)
-
 project(Station)
 
 add_library(source_lib OBJECT)
+
+set_target_properties(source_lib PROPERTIES
+    POSITION_INDEPENDENT_CODE ON
+)
 
 target_include_directories(source_lib
     PUBLIC
@@ -10,7 +13,7 @@ target_include_directories(source_lib
 )
 
 target_link_libraries(source_lib
-    PUBLIC
+    INTERFACE
         freetype 
         assimp 
         glfw 
@@ -29,6 +32,7 @@ target_link_libraries(source_lib
 
 target_sources(source_lib
     PRIVATE
+        mainloop.cpp
         button.cpp
         color.cpp
         mesh.cpp
@@ -41,18 +45,10 @@ target_sources(source_lib
         ground.cpp
 )
 
-set_target_properties(source_lib PROPERTIES
-    POSITION_INDEPENDENT_CODE ON)
-
 add_executable(Station)
 
-target_include_directories(Station
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
 target_link_libraries(Station
-    PUBLIC
+    PRIVATE
         source_lib
 )
 
@@ -60,7 +56,6 @@ target_sources(Station
     PRIVATE
         main.cpp
 )
-
 
 add_library(opengl_station SHARED)
 
@@ -80,21 +75,20 @@ execute_process(
 
 set_target_properties(opengl_station PROPERTIES
     POSITION_INDEPENDENT_CODE ON
-    OUTPUT_NAME "opengl_station${PYTHON_EXTENSION_SUFFIX}"
+    OUTPUT_NAME "opengl_station"
     PREFIX ""
-    SUFFIX ""
-    LIBRARY_OUTPUT_DIRECTORY ../..
+    SUFFIX "${PYTHON_EXTENSION_SUFFIX}"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
 )
 
 target_include_directories(opengl_station
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
     PRIVATE
         ${PYBIND_INCLUDES}
 )
 
 target_link_libraries(opengl_station
-    PUBLIC
+    PRIVATE
         source_lib
 )
 
@@ -103,5 +97,3 @@ target_sources(opengl_station
         bindings.cpp
 )
 
-
-add_subdirectory(tests)

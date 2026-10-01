@@ -1,1 +1,3 @@
+#!/bin/bash
+
 cmake --build build -t opengl_station

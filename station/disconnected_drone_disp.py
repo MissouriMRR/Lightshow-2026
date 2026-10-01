@@ -59,5 +59,5 @@ class DisconnectedDroneDisp(tkinter.Frame):
         self.connected_drones.append(new_drone)
         self.redraw()
 
-    def on_arm(self, _drone_id: str) -> None:
+    def on_arm(self, _drone_id: str, _armed: bool) -> None:
         self.redraw()

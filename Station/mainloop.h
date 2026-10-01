@@ -1,12 +1,15 @@
-#ifndef MAIN_H
-#define MAIN_H
+#ifndef MAINLOOP_H
+#define MAINLOOP_H
 
 #include <glm/common.hpp>
 #include <string>
+#include "drone.h"
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
 #include "shader.h"
+
+extern Drone *droney;
 
 enum class LoopReturn {
     NOTHING,
@@ -36,6 +39,6 @@ void setExpanse(glm::vec3 min, glm::vec3 max);
 void setColor(int id, float r, float g, float b, float a);
 void setPos(int id, float x, float y, float z);
 void setIp(int id, std::string ip);
-void setState(int id, int state);
+void setState(int id, DroneState state);
 
 #endif
