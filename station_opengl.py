@@ -1,5 +1,3 @@
-import threading
-
 from station.opengl import OpenGLWindow
 from station.station_server import StationServer
 import asyncio

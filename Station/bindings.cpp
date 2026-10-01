@@ -48,7 +48,7 @@ PYBIND11_MODULE(opengl_station, m) {
         .value("Land", LoopReturn::LAND)
         .value("Halt", LoopReturn::HALT);
 
-    pybind11::enum_<DroneState>(m, "DoneState")
+    pybind11::enum_<DroneState>(m, "DroneState")
         .value("Disconnected", DroneState::DISCONNECTED)
         .value("Connected", DroneState::CONNECTED)
         .value("Armed", DroneState::ARMED);

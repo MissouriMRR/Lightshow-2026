@@ -129,7 +129,7 @@ class StationServer:
         ids = self.config.get_drone_ids()[1:]
 
         async def connect(drone_id: str) -> None:
-            with contextlib.suppress(Exception):
+            with contextlib.suppress(TimeoutError):
                 async with asyncio.timeout(2):
                     await self.connection.ping(drone_id)
                     self.drone_connect_listener(drone_id)
