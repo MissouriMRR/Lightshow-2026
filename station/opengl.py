@@ -1,13 +1,13 @@
 import asyncio
-from typing import Callable
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 
 import dronekit
+import opengl_station
 
 from common.utils import loc_to_point
 from station.point import Point3d
 from station.station_server import StationServer
-import opengl_station
+
 
 class OpenGLWindow:
     station_server: StationServer
@@ -15,7 +15,9 @@ class OpenGLWindow:
 
     def __init__(self, station_server: StationServer):
         self.station_server = station_server
-        station_server.set_drone_listeners(self.drone_connect_listener, self.arm_listener, self.drone_position_listener)
+        station_server.set_drone_listeners(
+            self.drone_connect_listener, self.arm_listener, self.drone_position_listener
+        )
 
         self.expanse = self.calc_expanse()
         tmp = self.expanse[0]
@@ -25,7 +27,9 @@ class OpenGLWindow:
 
         config = self.station_server.config
         for id in config.get_drone_ids()[1:]:
-            opengl_station.set_ip(int(id), f"{config.get_drone_ip(id)}:{config.get_drone_port(id)}")
+            opengl_station.set_ip(
+                int(id), f"{config.get_drone_ip(id)}:{config.get_drone_port(id)}"
+            )
 
     async def check_station(self):
         while not opengl_station.should_close():
@@ -51,14 +55,23 @@ class OpenGLWindow:
         opengl_station.set_state(int(drone_id), opengl_station.DroneState.Connected)
 
     def arm_listener(self, drone_id: str, armed: bool):
-        opengl_station.set_state(int(drone_id), opengl_station.DroneState.Armed if armed else opengl_station.DroneState.Disconnected)
+        opengl_station.set_state(
+            int(drone_id),
+            opengl_station.DroneState.Armed
+            if armed
+            else opengl_station.DroneState.Disconnected,
+        )
 
-    def drone_position_listener(self, drone_id: str, position: dronekit.LocationGlobalRelative):
+    def drone_position_listener(
+        self, drone_id: str, position: dronekit.LocationGlobalRelative
+    ):
         placed = self.place_in_expanse(loc_to_point(position))
         opengl_station.set_pos(int(drone_id), placed.x, placed.y, placed.z)
 
     def calc_expanse(self) -> tuple[Point3d, Point3d]:
-        combined = [loc_to_point(loc) for frame in self.station_server.frames for loc in frame]
+        combined = [
+            loc_to_point(loc) for frame in self.station_server.frames for loc in frame
+        ]
 
         def edge_rel(predicate: Callable[[Iterable[float]], float]) -> Point3d:
             def edge_it(pull: Callable[[Point3d], float]) -> float:
@@ -75,4 +88,4 @@ class OpenGLWindow:
         range = range.apply_over_elements(lambda num: 1 if num < 0.0001 else num)
         bounded = position - self.expanse[0]
         scaled = bounded.mult_point_by_elements(1 / range)
-        return scaled * 20;
+        return scaled * 20

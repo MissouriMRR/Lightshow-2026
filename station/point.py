@@ -40,6 +40,6 @@ class Point3d:
 
     def apply_over_elements(self, b: Callable[[float], float]) -> Point3d:
         return Point3d(b(self.x), b(self.y), b(self.z))
-    
+
     def as_list(self) -> tuple[float, float, float]:
         return (self.x, self.y, self.z)

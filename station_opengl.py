@@ -1,6 +1,7 @@
+import asyncio
+
 from station.opengl import OpenGLWindow
 from station.station_server import StationServer
-import asyncio
 
 
 async def main() -> None:
@@ -8,6 +9,7 @@ async def main() -> None:
     window = OpenGLWindow(station_server)
 
     await asyncio.gather(station_server.run(), window.check_station())
+
 
 if __name__ == "__main__":
     asyncio.run(main())

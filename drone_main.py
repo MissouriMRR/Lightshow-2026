@@ -14,5 +14,6 @@ def main():
     while True:
         asyncio.run(drone.tick())
 
+
 if __name__ == "__main__":
     main()

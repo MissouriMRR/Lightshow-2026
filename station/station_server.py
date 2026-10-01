@@ -113,7 +113,8 @@ class StationServer:
         self,
         drone_connect_listener: Callable[[str], None] | None,
         arm_listener: Callable[[str, bool], None] | None,
-        drone_position_listener: Callable[[str, dronekit.LocationGlobalRelative], None] | None
+        drone_position_listener: Callable[[str, dronekit.LocationGlobalRelative], None]
+        | None,
     ) -> None:
         if drone_connect_listener != None:
             self.drone_connect_listener = drone_connect_listener
@@ -122,7 +123,10 @@ class StationServer:
         if drone_position_listener != None:
             self.drone_position_listener = drone_position_listener
 
-    def set_drone_position_listener(self, drone_position_listener: Callable[[str, dronekit.LocationGlobalRelative], None]):
+    def set_drone_position_listener(
+        self,
+        drone_position_listener: Callable[[str, dronekit.LocationGlobalRelative], None],
+    ):
         self.drone_position_listener = drone_position_listener
 
     async def initial_connect(self) -> None:
@@ -264,7 +268,6 @@ class StationServer:
             self.drones[drone_id].armed = False
             await self.connection.send_poll(drone_id)
             self.arm_listener(drone_id, False)
-
 
     def halt(self) -> None:
         self.current_message = Message.HALT
