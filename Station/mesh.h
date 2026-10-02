@@ -33,14 +33,14 @@ struct Vertex {
 };
 
 class Mesh {
-public:
+  public:
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
 
     Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, unsigned int instanceVBO);
     void draw(Shader *shader, int num);
 
-private:
+  private:
     unsigned int VAO, VBO, EBO;
 
     void setupMesh(unsigned int instanceVBO);

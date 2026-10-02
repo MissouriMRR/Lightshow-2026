@@ -2,11 +2,11 @@
 #include <iostream>
 
 #include "shader.h"
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
 #include <cstddef>
 #include <vector>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 
 Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, unsigned int instanceVBO) {
     this->vertices = vertices;
@@ -22,7 +22,6 @@ void Mesh::setupMesh(unsigned int instanceVBO) {
 
     glBindVertexArray(VAO);
 
-
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
@@ -30,20 +29,19 @@ void Mesh::setupMesh(unsigned int instanceVBO) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Normal)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)(offsetof(Vertex, Normal)));
     glEnableVertexAttribArray(1);
-
 
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(DroneData), (void*)(offsetof(InstanceDatum, position)));
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(DroneData), (void *)(offsetof(InstanceDatum, position)));
     glEnableVertexAttribArray(3);
     glVertexAttribDivisor(3, 1);
 
-    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(DroneData), (void*)(offsetof(InstanceDatum, color)));
+    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(DroneData), (void *)(offsetof(InstanceDatum, color)));
     glEnableVertexAttribArray(4);
     glVertexAttribDivisor(4, 1);
 

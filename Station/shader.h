@@ -7,7 +7,7 @@
 #include <string>
 
 class Shader {
-public:
+  public:
     unsigned int ID;
 
     Shader(std::string vertexPath, std::string fragmentPath);

@@ -31,8 +31,8 @@ Shader::Shader(std::string vertexPath, std::string fragmentPath) {
         return;
     }
 
-    const char* vShaderCode = vertexCode.c_str();
-    const char* fShaderCode = fragmentCode.c_str();
+    const char *vShaderCode = vertexCode.c_str();
+    const char *fShaderCode = fragmentCode.c_str();
 
     unsigned int vertex, fragment;
     int success;
@@ -73,9 +73,7 @@ Shader::Shader(std::string vertexPath, std::string fragmentPath) {
     glDeleteShader(fragment);
 }
 
-void Shader::use() {
-    glUseProgram(ID);
-}
+void Shader::use() { glUseProgram(ID); }
 
 void Shader::setBool(const std::string &name, bool value) const {
     glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
@@ -97,9 +95,7 @@ void Shader::setVec3(const std::string &name, float x, float y, float z) const {
     glUniform3f(glGetUniformLocation(ID, name.c_str()), x, y, z);
 }
 
-void Shader::setVec3(const std::string &name, glm::vec3 value) const {
-    setVec3(name, value.x, value.y, value.z);
-}
+void Shader::setVec3(const std::string &name, glm::vec3 value) const { setVec3(name, value.x, value.y, value.z); }
 
 void Shader::setVec4(const std::string &name, glm::vec4 value) const {
     glUniform4f(glGetUniformLocation(ID, name.c_str()), value.x, value.y, value.z, value.w);

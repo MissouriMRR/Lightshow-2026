@@ -14,25 +14,24 @@ int main() {
     while (!shouldClose()) {
         result = loop();
         switch (result) {
-            case LoopReturn::ARM:
-                std::cout << "ARM\n";
-                break;
-            case LoopReturn::TAKEOFF:
-                std::cout << "TAKEOFF\n";
-                break;
-            case LoopReturn::STEP:
-                std::cout << "STEP\n";
-                break;
-            case LoopReturn::LAND:
-                std::cout << "LAND\n";
-                break;
-            case LoopReturn::HALT:
-                std::cout << "HALT\n";
-                break;
-            case LoopReturn::NOTHING:
-                break;
+        case LoopReturn::ARM:
+            std::cout << "ARM\n";
+            break;
+        case LoopReturn::TAKEOFF:
+            std::cout << "TAKEOFF\n";
+            break;
+        case LoopReturn::STEP:
+            std::cout << "STEP\n";
+            break;
+        case LoopReturn::LAND:
+            std::cout << "LAND\n";
+            break;
+        case LoopReturn::HALT:
+            std::cout << "HALT\n";
+            break;
+        case LoopReturn::NOTHING:
+            break;
         }
-
     }
     cleanup();
 }

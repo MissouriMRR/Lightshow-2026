@@ -1,8 +1,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <iostream>
 #include "glm/glm.hpp"
+#include <iostream>
 
 void printVec(glm::vec3 x);
 

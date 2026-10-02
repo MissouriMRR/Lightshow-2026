@@ -1,13 +1,13 @@
 #include "mainloop.h"
 
+#include "GLFW/glfw3.h"
+#include "mesh.h"
+#include "stb_image.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
-#include "GLFW/glfw3.h"
-#include "mesh.h"
-#include "stb_image.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -17,14 +17,14 @@
 #include <string>
 #include <vector>
 
-#include "quader.h"
+#include "button.h"
 #include "camera.h"
 #include "drone.h"
-#include "button.h"
 #include "ground.h"
+#include "quader.h"
 
 #ifndef ASSET_DIR
-    #define ASSET_DIR ""
+#define ASSET_DIR ""
 #endif
 
 const int START_WIDTH = 800;
@@ -66,21 +66,13 @@ void setExpanse(glm::vec3 min, glm::vec3 max) {
     droney->maxPos = max;
 }
 
-void setColor(int id, float r, float g, float b, float a) {
-    droney->setColor(id, r, g, b, a);
-}
+void setColor(int id, float r, float g, float b, float a) { droney->setColor(id, r, g, b, a); }
 
-void setPos(int id, float x, float y, float z) {
-    droney->setPos(id, x, y, z);
-}
+void setPos(int id, float x, float y, float z) { droney->setPos(id, x, y, z); }
 
-void setIp(int id, std::string ip) {
-    droney->setIp(id, ip);
-}
+void setIp(int id, std::string ip) { droney->setIp(id, ip); }
 
-void setState(int id, DroneState state) {
-    droney->setState(id, state);
-}
+void setState(int id, DroneState state) { droney->setState(id, state); }
 
 int setup() {
     long time;
@@ -116,7 +108,9 @@ int setup() {
     int i = 0;
 
     auto makeButton = [&i, buttonWidth, buttonHeight, padding](LoopReturn message, std::string name) {
-        buttons.push_back(Button(buttonWidth / 2 + buttonWidth * i, 1 - buttonHeight / 2 - padding, buttonWidth - padding, buttonHeight, [message, name](bool, bool) {currentMessage = message;}, name));
+        buttons.push_back(Button(
+            buttonWidth / 2 + buttonWidth * i, 1 - buttonHeight / 2 - padding, buttonWidth - padding, buttonHeight,
+            [message, name](bool, bool) { currentMessage = message; }, name));
         i++;
     };
 
@@ -157,17 +151,11 @@ LoopReturn loop() {
     return currentMessage;
 }
 
-void cleanup() {
-    glfwTerminate();
-}
+void cleanup() { glfwTerminate(); }
 
-bool shouldClose() {
-    return glfwWindowShouldClose(window);
-}
+bool shouldClose() { return glfwWindowShouldClose(window); }
 
-void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
-    setGlViewport(width, height);
-}
+void framebufferSizeCallback(GLFWwindow *window, int width, int height) { setGlViewport(width, height); }
 
 void checkButtons() {
     double xpos, ypos;
@@ -202,7 +190,7 @@ void getScaledCursorPos(GLFWwindow *window, double *xpos, double *ypos) {
     *ypos = yposRaw / height;
 }
 
-void proccessInput(GLFWwindow* window) {
+void proccessInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE)) droney->resetCurrentDrones();
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
@@ -214,7 +202,7 @@ void proccessInput(GLFWwindow* window) {
     }
 }
 
-void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
+void mouseCallback(GLFWwindow *window, double xpos, double ypos) {
     float xOffset = lastX - xpos;
     float yOffset = ypos - lastY;
     lastX = xpos;

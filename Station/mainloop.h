@@ -1,34 +1,26 @@
 #ifndef MAINLOOP_H
 #define MAINLOOP_H
 
-#include <glm/common.hpp>
-#include <string>
 #include "drone.h"
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
+#include <glm/common.hpp>
+#include <string>
 
 #include "shader.h"
 
 extern Drone *droney;
 
-enum class LoopReturn {
-    NOTHING,
-    ARM,
-    TAKEOFF,
-    STEP,
-    LAND,
-    HALT
-};
+enum class LoopReturn { NOTHING, ARM, TAKEOFF, STEP, LAND, HALT };
 
-void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-void proccessInput(GLFWwindow* window);
-void mouseCallback(GLFWwindow* window, double xpos, double ypos);
+void framebufferSizeCallback(GLFWwindow *window, int width, int height);
+void proccessInput(GLFWwindow *window);
+void mouseCallback(GLFWwindow *window, double xpos, double ypos);
 void setupShader(Shader *shader);
 void parseInput(std::string input);
 int setupWindow(GLFWwindow *&window);
 void setGlViewport(int width, int height);
 void getScaledCursorPos(GLFWwindow *window, double *xpos, double *ypos);
-
 
 int setup();
 LoopReturn loop();

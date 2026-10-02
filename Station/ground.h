@@ -5,11 +5,11 @@
 #define GROUND_H
 
 class Ground {
-public:
-
+  public:
     Ground(std::string assetDir);
     void draw(glm::mat4 projection, Camera *camera);
-private:
+
+  private:
     unsigned int VAO, VBO;
     Shader planeShader;
 };

@@ -1,12 +1,12 @@
 #include "quader.h"
 
-#include <GLFW/glfw3.h>
 #include "shader.h"
+#include <GLFW/glfw3.h>
 #include <iostream>
 
+#include "glm/gtc/matrix_transform.hpp"
 #include <glad/glad.h>
 #include <iterator>
-#include "glm/gtc/matrix_transform.hpp"
 
 #include "ft2build.h"
 #include FT_FREETYPE_H
@@ -24,7 +24,7 @@ Quader::Quader(std::string fontPath) {
 
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -55,29 +55,18 @@ Quader::Quader(std::string fontPath) {
         unsigned int texture;
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
-        glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RED,
-            face->glyph->bitmap.width,
-            face->glyph->bitmap.rows,
-            0,
-            GL_RED,
-            GL_UNSIGNED_BYTE,
-            face->glyph->bitmap.buffer
-        );
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, face->glyph->bitmap.width, face->glyph->bitmap.rows, 0, GL_RED,
+                     GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        characters.insert(std::pair<char, Character>(c, Character{
-            texture,
-            glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
-            glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-            (unsigned int)face->glyph->advance.x
-        }));
+        characters.insert(std::pair<char, Character>(
+            c, Character{texture, glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+                         glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+                         (unsigned int)face->glyph->advance.x}));
     }
 
     FT_Set_Pixel_Sizes(face, 0, smallSize);
@@ -91,29 +80,18 @@ Quader::Quader(std::string fontPath) {
         unsigned int texture;
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
-        glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RED,
-            face->glyph->bitmap.width,
-            face->glyph->bitmap.rows,
-            0,
-            GL_RED,
-            GL_UNSIGNED_BYTE,
-            face->glyph->bitmap.buffer
-        );
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, face->glyph->bitmap.width, face->glyph->bitmap.rows, 0, GL_RED,
+                     GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        smallCharacters.insert(std::pair<char, Character>(c, Character{
-            texture,
-            glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
-            glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-            (unsigned int)face->glyph->advance.x
-        }));
+        smallCharacters.insert(std::pair<char, Character>(
+            c, Character{texture, glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+                         glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+                         (unsigned int)face->glyph->advance.x}));
     }
 
     FT_Done_Face(face);
@@ -125,7 +103,7 @@ Quader::Quader(std::string fontPath) {
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -147,13 +125,9 @@ void Quader::renderQuad(glm::vec2 bottomCorner, glm::vec2 topCorner, glm::vec4 c
     topCorner *= windowSize;
 
     float vertices[6][4] = {
-        {bottomCorner.x, topCorner.y},
-        {bottomCorner.x, bottomCorner.y},
-        {topCorner.x, bottomCorner.y},
+        {bottomCorner.x, topCorner.y}, {bottomCorner.x, bottomCorner.y}, {topCorner.x, bottomCorner.y},
 
-        {bottomCorner.x, topCorner.y},
-        {topCorner.x, bottomCorner.y},
-        {topCorner.x, topCorner.y},
+        {bottomCorner.x, topCorner.y}, {topCorner.x, bottomCorner.y},    {topCorner.x, topCorner.y},
     };
 
     quadShader->setVec4("textColor", color);
@@ -166,7 +140,8 @@ void Quader::renderQuad(glm::vec2 bottomCorner, glm::vec2 topCorner, glm::vec4 c
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void Quader::renderText(std::string text, float x, float y, float scale, glm::vec3 color, HCentering hCenterType, VCentering vCenterType, float priority) {
+void Quader::renderText(std::string text, float x, float y, float scale, glm::vec3 color, HCentering hCenterType,
+                        VCentering vCenterType, float priority) {
     fontShader->use();
     fontShader->setMat4("projection", glm::ortho(0.0f, windowSize.x, 0.0f, windowSize.y));
     fontShader->setVec3("textColor", color);
@@ -215,13 +190,9 @@ void Quader::renderText(std::string text, float x, float y, float scale, glm::ve
         float h = ch.size.y * scale;
 
         float vertices[6][4] = {
-            {xPos, yPos + h, 0.0f, 0.0f},
-            {xPos, yPos, 0.0f, 1.0f},
-            {xPos + w, yPos, 1.0f, 1.0f},
+            {xPos, yPos + h, 0.0f, 0.0f}, {xPos, yPos, 0.0f, 1.0f},     {xPos + w, yPos, 1.0f, 1.0f},
 
-            {xPos, yPos + h, 0.0f, 0.0f},
-            {xPos + w, yPos, 1.0f, 1.0f},
-            {xPos + w, yPos + h, 1.0f, 0.0f},
+            {xPos, yPos + h, 0.0f, 0.0f}, {xPos + w, yPos, 1.0f, 1.0f}, {xPos + w, yPos + h, 1.0f, 0.0f},
         };
 
         glBindTexture(GL_TEXTURE_2D, ch.textureID);

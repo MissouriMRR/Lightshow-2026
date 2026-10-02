@@ -2,21 +2,21 @@
 #define MODEL_H
 
 #include "button.h"
+#include "camera.h"
 #include "glm/detail/type_mat.hpp"
 #include "glm/detail/type_vec.hpp"
 #include "mesh.h"
 #include "quader.h"
+#include <assimp/scene.h>
 #include <cmath>
 #include <functional>
 #include <set>
 #include <string>
 #include <unordered_set>
 #include <vector>
-#include <assimp/scene.h>
-#include "camera.h"
 
 class Drone {
-public:
+  public:
     Drone();
     Drone(std::string path);
     void draw(Shader *shader);
@@ -41,15 +41,15 @@ public:
     glm::vec3 minPos = glm::vec3(100000.0f, 100000.0f, 100000.0f);
     std::vector<int> currentDrones;
     std::vector<DroneData> droneDatas;
-private:
 
+  private:
     void loadModel(std::string path);
     void processNode(aiNode *node, const aiScene *scene);
     Mesh processMesh(aiMesh *mesh, const aiScene *scene);
     void resetVBO();
 
-    DroneData* getInstance(int id);
-    Button* getButton(int id);
+    DroneData *getInstance(int id);
+    Button *getButton(int id);
     std::vector<int>::iterator findCurrentDrone(int idx);
     void placeButton();
 

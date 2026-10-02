@@ -34,7 +34,6 @@ target_sources(source_lib
     PRIVATE
         mainloop.cpp
         button.cpp
-        color.cpp
         mesh.cpp
         quader.cpp
         shader.cpp
@@ -101,3 +100,29 @@ target_sources(opengl_station
     PRIVATE
         bindings.cpp
 )
+
+file(GLOB_RECURSE FILES_TO_FORMAT
+    "*.cpp"
+    "*.h")
+
+set(IGNORE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/.clang-format-ignore")
+
+file(STRINGS ${IGNORE_FILE} IGNORE_LINES)
+
+set(FILTER_REGEX "")
+foreach(LINE IN LISTS IGNORE_LINES)
+    string(STRIP "${LINE}" LINE)
+    if(NOT LINE MATCHES "^#" AND NOT LINE STREQUAL "")
+        if(FILTER_REGEX STREQUAL "")
+            set(FILTER_REGEX "(${LINE})")
+        else()
+            set(FILTER_REGEX "${FILTER_REGEX}|(${LINE})")
+        endif()
+    endif()
+endforeach()
+
+list(FILTER FILES_TO_FORMAT EXCLUDE REGEX "${FILTER_REGEX}")
+
+add_custom_target(check-format
+    COMMAND clang-format --dry-run --Werror -style=file ${FILES_TO_FORMAT}
+    VERBATIM)

@@ -4,17 +4,17 @@
 
 #include <algorithm>
 #include <assimp/Importer.hpp>
-#include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/scene.h>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <istream>
 #include <ostream>
+#include <ranges>
 #include <string>
 #include <tuple>
 #include <vector>
-#include <ranges>
 
 #include "glm/gtc/matrix_transform.hpp"
 #include "mesh.h"
@@ -25,8 +25,7 @@
 const float buttonHeight = 0.02f;
 const float buttonWidth = 0.1f;
 
-Drone::Drone() : meshes(), droneDatas(), ipButtons(), currentDrones() {
-}
+Drone::Drone() : meshes(), droneDatas(), ipButtons(), currentDrones() {}
 
 Drone::Drone(std::string path) : meshes(), droneDatas(), ipButtons(), currentDrones() {
     VBO = 0;
@@ -110,14 +109,14 @@ void Drone::addInstance(int id) {
     });
 }
 
-DroneData* Drone::getInstance(int id) {
+DroneData *Drone::getInstance(int id) {
     for (int i = 0; i < droneDatas.size(); i++) {
         if (droneDatas[i].id == id) return &droneDatas[i];
     }
     return nullptr;
 }
 
-Button* Drone::getButton(int id) {
+Button *Drone::getButton(int id) {
     for (int i = 0; i < droneDatas.size(); i++) {
         if (droneDatas[i].id == id) return &ipButtons[i];
     }
@@ -173,31 +172,28 @@ void Drone::drawInstances(Quader *quader, glm::mat4 projection, Camera *camera) 
     for (int i = 0; i < droneDatas.size(); i++) {
         glm::vec3 color;
         switch (droneDatas[i].state) {
-            case DroneState::DISCONNECTED:
-                color = glm::vec3(1, 0, 0);
+        case DroneState::DISCONNECTED:
+            color = glm::vec3(1, 0, 0);
             break;
 
-            case DroneState::CONNECTED:
-                color = glm::vec3(1, 1, 0);
+        case DroneState::CONNECTED:
+            color = glm::vec3(1, 1, 0);
             break;
 
-            case DroneState::ARMED:
-                color = glm::vec3(0, 1, 0);
+        case DroneState::ARMED:
+            color = glm::vec3(0, 1, 0);
             break;
         }
         ipButtons[i].textColor = color;
         ipButtons[i].color = findCurrentDrone(i) == currentDrones.end() ? glm::vec4(0, 0, 0, 1) : glm::vec4(1, 1, 0, 1);
         ipButtons[i].draw(quader);
-
     }
 }
 
-int Drone::getNum() {
-    return droneDatas[0].color.a;
-}
+int Drone::getNum() { return droneDatas[0].color.a; }
 
 std::function<void(bool, bool)> Drone::curryButton(int idx) {
-    return [this, idx](bool shift, bool ctrl) {setCurrentDrone(idx, shift, ctrl);};
+    return [this, idx](bool shift, bool ctrl) { setCurrentDrone(idx, shift, ctrl); };
 }
 
 std::vector<int>::iterator Drone::findCurrentDrone(int idx) {
@@ -219,7 +215,8 @@ void Drone::setCurrentDrone(int idx, bool shift, bool ctrl) {
         }
     } else {
         if (idxLoc != currentDrones.end() && shift && !ctrl) currentDrones.erase(idxLoc);
-        else currentDrones.push_back(idx);
+        else
+            currentDrones.push_back(idx);
     }
 
     lastIdx = idx;
@@ -231,7 +228,6 @@ bool Drone::checkButtons(float mousex, float mousey, bool shift, bool ctrl) {
     for (Button b : ipButtons) {
         out |= b.checkClick(mousex, mousey, shift, ctrl);
     }
-
 
     return out;
 }
@@ -249,7 +245,9 @@ bool Drone::checkDrones(float mousex, float mousey, bool shift, bool ctrl, Camer
 
     std::vector<std::tuple<glm::vec4, glm::vec4, int>> positions;
     for (int i = 0; i < droneDatas.size(); i++) {
-        glm::vec3 point = camera->getViewMatrix() * glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f)), droneDatas[i].position) * glm::vec4(0, 0, 0, 1);
+        glm::vec3 point = camera->getViewMatrix() *
+                          glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f)), droneDatas[i].position) *
+                          glm::vec4(0, 0, 0, 1);
 
         float boxSize = 0.3;
         glm::vec4 result = projection * (glm::vec4(point, 0) + glm::vec4(-boxSize, -boxSize, 0, 1));
@@ -263,10 +261,9 @@ bool Drone::checkDrones(float mousex, float mousey, bool shift, bool ctrl, Camer
         positions.push_back(std::make_tuple(result, result2, i));
     }
 
-    std::sort(positions.begin(), positions.end(), [](auto a, auto b){return std::get<0>(b).z > std::get<0>(a).z;});
+    std::sort(positions.begin(), positions.end(), [](auto a, auto b) { return std::get<0>(b).z > std::get<0>(a).z; });
     for (auto [result, result2, i] : positions) {
-        if (result.x < mousex && mousex < result2.x
-            && result.y < mousey && mousey < result2.y) {
+        if (result.x < mousex && mousex < result2.x && result.y < mousey && mousey < result2.y) {
             setCurrentDrone(i, shift, false);
             out = true;
             break;
@@ -276,6 +273,4 @@ bool Drone::checkDrones(float mousex, float mousey, bool shift, bool ctrl, Camer
     return out;
 }
 
-void Drone::resetCurrentDrones() {
-    currentDrones.clear();
-}
+void Drone::resetCurrentDrones() { currentDrones.clear(); }
