@@ -1,6 +1,6 @@
 import asyncio
 
-from station.opengl import OpenGLWindow
+from station.opengl_window import OpenGLWindow
 from station.station_server import StationServer
 
 

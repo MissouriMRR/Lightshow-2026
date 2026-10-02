@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <ctime>
 #include <iostream>
 #include "GLFW/glfw3.h"
@@ -21,6 +22,10 @@
 #include "drone.h"
 #include "button.h"
 #include "ground.h"
+
+#ifndef ASSET_DIR
+    #define ASSET_DIR ""
+#endif
 
 const int START_WIDTH = 800;
 const int START_HEIGHT = 600;
@@ -95,14 +100,15 @@ int setup() {
 
     stbi_set_flip_vertically_on_load(true);
 
-    fontShader = new Shader("shaders/fontVertex.glsl", "shaders/fontFragment.glsl");
-    quadShader = new Shader("shaders/fontVertex.glsl", "shaders/quadFragment.glsl");
+    std::string assetDir = ASSET_DIR;
+    fontShader = new Shader(assetDir + "shaders/fontVertex.glsl", assetDir + "shaders/fontFragment.glsl");
+    quadShader = new Shader(assetDir + "shaders/fontVertex.glsl", assetDir + "shaders/quadFragment.glsl");
 
-    droney = new Drone("droney/droney.obj");
-    shader = new Shader("shaders/vertex.glsl", "shaders/fragment.glsl");
+    droney = new Drone(assetDir + "drone_model/drone_model.obj");
+    shader = new Shader(assetDir + "shaders/vertex.glsl", assetDir + "shaders/fragment.glsl");
 
-    quader = new Quader();
-    ground = new Ground();
+    quader = new Quader(assetDir + "fonts/arial.ttf");
+    ground = new Ground(assetDir);
 
     float padding = 0.02f;
     float buttonWidth = 0.9f / 6.0f;

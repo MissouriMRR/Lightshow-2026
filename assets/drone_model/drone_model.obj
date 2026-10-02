@@ -1,6 +1,6 @@
 # Blender 5.1.1
 # www.blender.org
-mtllib droney.mtl
+mtllib drone_model.mtl
 o Cube
 v -1.838959 -0.028033 1.544877
 v -1.838959 1.014837 1.544877

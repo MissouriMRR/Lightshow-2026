@@ -45,6 +45,11 @@ target_sources(source_lib
         ground.cpp
 )
 
+target_compile_definitions(source_lib
+    PRIVATE
+        ASSET_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/../assets/\"
+)
+
 add_executable(Station)
 
 target_link_libraries(Station
@@ -96,4 +101,3 @@ target_sources(opengl_station
     PRIVATE
         bindings.cpp
 )
-

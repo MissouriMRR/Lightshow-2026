@@ -18,7 +18,7 @@
 class Drone {
 public:
     Drone();
-    Drone(const char *path);
+    Drone(std::string path);
     void draw(Shader *shader);
 
     void addInstance(DroneData droneData);

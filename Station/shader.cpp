@@ -4,7 +4,7 @@
 #include <iostream>
 #include <sstream>
 
-Shader::Shader(const char* vertexPath, const char* fragmentPath) {
+Shader::Shader(std::string vertexPath, std::string fragmentPath) {
     std::string vertexCode;
     std::string fragmentCode;
     std::ifstream vShaderFile;

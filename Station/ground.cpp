@@ -4,7 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-Ground::Ground() : planeShader("shaders/planeVertex.glsl", "shaders/planeFragment.glsl") {
+Ground::Ground(std::string assetDir) : planeShader(assetDir + "shaders/planeVertex.glsl", assetDir + "shaders/planeFragment.glsl") {
     float vertices[6][3] = {
         {0, 0, 0},
         {1, 0, 0},

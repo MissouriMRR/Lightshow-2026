@@ -28,7 +28,7 @@ const float buttonWidth = 0.1f;
 Drone::Drone() : meshes(), droneDatas(), ipButtons(), currentDrones() {
 }
 
-Drone::Drone(const char *path) : meshes(), droneDatas(), ipButtons(), currentDrones() {
+Drone::Drone(std::string path) : meshes(), droneDatas(), ipButtons(), currentDrones() {
     VBO = 0;
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);

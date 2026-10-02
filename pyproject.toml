@@ -40,8 +40,3 @@ reportUnknownVariableType = false
 
 [tool.ruff.lint]
 ignore = ["BLE001", "LOG015"]
-
-[tool.uv.workspace]
-members = [
-    "Station",
-]

@@ -7,7 +7,7 @@
 class Ground {
 public:
 
-    Ground();
+    Ground(std::string assetDir);
     void draw(glm::mat4 projection, Camera *camera);
 private:
     unsigned int VAO, VBO;

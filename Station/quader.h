@@ -32,7 +32,7 @@ enum class VCentering {
 
 class Quader {
 public:
-    Quader();
+    Quader(std::string fontPath);
     void setup(Shader *fontShader, Shader *quadShader, glm::vec2 windowSize);
     void renderQuad(glm::vec2 bottomCorner, glm::vec2 topCorner, glm::vec4 color = glm::vec4(1, 1, 1, 1), float priority = 0);
     void renderText(std::string text, float x, float y, float scale, glm::vec3 color, HCentering centerType = HCentering::LEFT, VCentering vCenterType = VCentering::BOTTOM, float priority = 0);

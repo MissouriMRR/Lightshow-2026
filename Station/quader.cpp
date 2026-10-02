@@ -18,7 +18,7 @@ unsigned int VAO, VBO;
 const static int smallSize = 9;
 const static int largeSize = 48;
 
-Quader::Quader() {
+Quader::Quader(std::string fontPath) {
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
 
@@ -40,7 +40,7 @@ Quader::Quader() {
     }
 
     FT_Face face;
-    if (FT_New_Face(ft, "fonts/arial.ttf", 0, &face)) {
+    if (FT_New_Face(ft, fontPath.c_str(), 0, &face)) {
         std::cout << "Failed to load font\n";
     }
 
