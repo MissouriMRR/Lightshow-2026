@@ -51,5 +51,32 @@ jobs:
       - name: Install dependencies
         run: uv sync --dev
 
+      - name: Install cpp dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y libfreetype-dev libassimp-dev libglfw3-dev libx11-dev build-essential libxi-dev libxrandr-dev zlib1g-dev libbz2-dev libpng-dev libbrotli-dev python3-dev
+
+      - name: Compile station
+        run: ./compileStation.sh
+
       - name: Run basedpyright
         run: uv run basedpyright --level error
+
+  clang-format:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Station
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cmake-format
+        run: |
+          sudo apt update
+          sudo apt install -y cmake cmake-format
+
+      - name: Init cmake
+        run: cmake -S . -B build
+
+      - name: Run clang-format format check
+        run: cmake --build build -t check-format
