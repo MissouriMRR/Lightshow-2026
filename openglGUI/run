@@ -1,0 +1,5 @@
+#!/bin/bash
+
+if cmake --build build -t Station; then
+    build/Station
+fi

@@ -1,0 +1,12 @@
+BasedOnStyle: LLVM
+# The number of columns used for tab stops
+TabWidth: 4
+# The number of columns used for indentation
+IndentWidth: 4
+# How tabs should be used: Always, Never, or ForIndentation
+UseTab: Never
+
+ColumnLimit: 120
+
+AllowShortIfStatementsOnASingleLine: Always
+AllowShortLoopsOnASingleLine: true
