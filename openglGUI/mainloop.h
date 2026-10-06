@@ -1,3 +1,8 @@
+/*
+ * mainloop.h
+ * Defines mainloop functions
+ */
+
 #ifndef MAINLOOP_H
 #define MAINLOOP_H
 

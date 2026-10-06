@@ -1,3 +1,8 @@
+/*
+ * ground.h
+ * Defines Ground class
+ */
+
 #include "camera.h"
 #include "shader.h"
 

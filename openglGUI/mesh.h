@@ -1,3 +1,9 @@
+/*
+ * mesh.h
+ * Defines structs to hold drone information
+ * Defines Mesh class
+ */
+
 #ifndef MESH_H
 #define MESH_H
 

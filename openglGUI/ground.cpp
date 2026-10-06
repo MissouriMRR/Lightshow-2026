@@ -1,3 +1,8 @@
+/*
+ * ground.cpp
+ * Implementation for Ground class
+ */
+
 #include "ground.h"
 #include "glad/glad.h"
 #include "glm/glm.hpp"

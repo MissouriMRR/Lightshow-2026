@@ -1,3 +1,8 @@
+/*
+ * shader.cpp
+ * Handles vertex and fragment initialization and binding
+ */
+
 #include "shader.h"
 #include "glm/gtc/type_ptr.hpp"
 #include <fstream>

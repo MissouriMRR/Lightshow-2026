@@ -1,3 +1,8 @@
+/*
+ * shader.h
+ * Defines shader class
+ */
+
 #ifndef SHADER_H
 #define SHADER_H
 

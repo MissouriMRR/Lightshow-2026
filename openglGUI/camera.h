@@ -1,3 +1,8 @@
+/*
+ * camera.h
+ * Inline class definition for camera code
+ */
+
 #ifndef CAMERA_H
 #define CAMERA_H
 

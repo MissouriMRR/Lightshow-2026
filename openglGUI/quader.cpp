@@ -1,3 +1,8 @@
+/*
+ * quader.cpp
+ * Utility class for rendering quads and text
+ */
+
 #include "quader.h"
 
 #include "shader.h"

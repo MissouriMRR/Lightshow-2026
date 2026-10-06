@@ -1,3 +1,8 @@
+/*
+ * button.cpp
+ * Button class implementation
+ */
+
 #include "button.h"
 #include "quader.h"
 

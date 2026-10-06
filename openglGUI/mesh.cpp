@@ -1,3 +1,9 @@
+/*
+ * mesh.cpp
+ * Sets up a VAO for gpu-instanced rendering
+ * Renders supplied mesh
+ */
+
 #include "mesh.h"
 #include <iostream>
 

@@ -1,3 +1,8 @@
+/*
+ * button.h
+ * Defines a button as something which takes a function, calling it on click
+ */
+
 #ifndef BUTTON_H
 #define BUTTON_H
 

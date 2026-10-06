@@ -1,3 +1,9 @@
+/*
+ * bindings.cpp
+ * Holds Python bindings
+ * Only included under the opengl_station cmake target
+ */
+
 #include "mainloop.h"
 #include "mesh.h"
 #include "pybind11/pybind11.h"

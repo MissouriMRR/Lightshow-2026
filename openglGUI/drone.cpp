@@ -1,3 +1,12 @@
+/*
+ * drone.cpp
+ *
+ * Loads the models for rendering drones
+ * Tracks drone positions
+ * Renders drone ips to the sidebar
+ * Checks for clicks on drones and sidebar, storing selected in a list
+ */
+
 #include "drone.h"
 #include "assimp/vector3.h"
 #include "glm/detail/type_vec.hpp"

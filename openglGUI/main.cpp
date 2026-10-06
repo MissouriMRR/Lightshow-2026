@@ -1,3 +1,9 @@
+/*
+ * main.cpp
+ * Test runner for GUI
+ * Only included in cmake Station render target
+ */
+
 #include "mainloop.h"
 #include "mesh.h"
 #include <iostream>

@@ -1,3 +1,8 @@
+/*
+ * quader.h
+ * Defines Quader methods
+ */
+
 #ifndef QUADER_H
 #define QUADER_H
 

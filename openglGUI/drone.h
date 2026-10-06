@@ -1,3 +1,8 @@
+/*
+ * drone.h
+ * Defines drone class
+ */
+
 #ifndef MODEL_H
 #define MODEL_H
 

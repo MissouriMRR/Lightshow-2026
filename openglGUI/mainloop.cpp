@@ -1,3 +1,9 @@
+/*
+ * mainloop.cpp
+ * Spawns glfw window
+ * Manages window messages
+ */
+
 #include "mainloop.h"
 
 #include "GLFW/glfw3.h"
