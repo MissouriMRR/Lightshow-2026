@@ -64,8 +64,17 @@ def main() -> None:
             # Process incoming commands and check for completion
             command_handler.process_commands()
 
-            # Send periodic heartbeat
+            # No vehicle here, so simulate execution: a command finishes once
+            # its configured duration has elapsed
             current_time = time.time()
+            pending = command_handler.pending_command
+            if (
+                pending is not None
+                and current_time - pending.start_time >= pending.duration
+            ):
+                pending.completed = True
+
+            # Send periodic heartbeat
             if current_time - last_heartbeat >= heartbeat_interval:
                 heartbeat_message = Message.create(
                     id=MessageType.HEARTBEAT,
