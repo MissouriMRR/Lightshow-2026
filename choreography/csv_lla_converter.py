@@ -90,7 +90,7 @@ def main() -> None:
     if default_coords == "y":
         reference_lat = 37.948557
         reference_lon = -91.783716
-        reference_alt = 400.0
+        reference_alt = 0
     else:
         reference_lat = float(input("Center latitude (e.g., 37.950177): "))
         reference_lon = float(input("Center longitude (e.g., -91.780905): "))
