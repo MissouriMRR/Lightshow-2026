@@ -46,12 +46,12 @@ class Drone {
     glm::vec3 minPos = glm::vec3(100000.0f, 100000.0f, 100000.0f);
     std::vector<int> currentDrones;
     std::vector<DroneData> droneDatas;
+    void resetVBO();
 
   private:
     void loadModel(std::string path);
     void processNode(aiNode *node, const aiScene *scene);
     Mesh processMesh(aiMesh *mesh, const aiScene *scene);
-    void resetVBO();
 
     DroneData *getInstance(int id);
     Button *getButton(int id);

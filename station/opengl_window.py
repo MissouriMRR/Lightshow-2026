@@ -1,6 +1,11 @@
-import asyncio
+from typing import override, cast
+
+from PySide6.QtCore import QCoreApplication, QEvent
+
 from collections.abc import Callable, Iterable
-from uu import Error
+
+from PySide6.QtGui import QColor, QPalette
+from PySide6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget
 
 import dronekit
 import opengl_station  # loads opengl_station shared library that the c++ was compiled into
@@ -9,14 +14,55 @@ from common.utils import loc_to_point
 from station.point import Point3d
 from station.station_server import StationServer
 
+class ArmEvent(QEvent):
+    armed: bool
+    id: int
+    event_number: int = QEvent.registerEventType()
 
-class OpenGLWindow:
+    def __init__(self, id: int, armed: bool):
+        super().__init__(QEvent.Type(self.event_number))
+        self.armed = armed
+        self.id = id
+
+class DronePositionEvent(QEvent):
+    position: dronekit.LocationGlobalRelative
+    event_number: int = QEvent.registerEventType()
+    id: int
+
+    def __init__(self, id: int, position: dronekit.LocationGlobalRelative):
+        super().__init__(QEvent.Type(self.event_number))
+        self.position = position
+        self.id = id
+
+class DroneConnectEvent(QEvent):
+    event_number: int = QEvent.registerEventType()
+    id: int
+
+    def __init__(self, id: int):
+        super().__init__(QEvent.Type(self.event_number))
+        self.id = id
+
+
+class OpenGLWindow(QMainWindow):
     """Handles running and communication of the opengl window"""
 
     station_server: StationServer
     expanse: tuple[Point3d, Point3d]
 
+    opengl_gui: opengl_station.Gui
+    
+    arm_button: QPushButton
+    takeoff_button: QPushButton
+    step_button: QPushButton
+    land_button: QPushButton
+    halt_button: QPushButton
+
     def __init__(self, station_server: StationServer):
+        super().__init__()
+
+        self.setWindowTitle("Station")
+        self.resize(800, 600)
+
         self.station_server = station_server
         station_server.set_drone_listeners(
             self.drone_connect_listener, self.arm_listener, self.drone_position_listener
@@ -28,61 +74,127 @@ class OpenGLWindow:
         tmp.y = 0
         self.expanse = (tmp, self.expanse[1])
 
-        opengl_station.setup()
+        self.arm_button = QPushButton("arm")
+        self.arm_button.clicked.connect(lambda: self.button_click(station_server.arm))
 
-        # add drones to opengl window
-        config = self.station_server.config
-        for id in config.get_drone_ids()[1:]:
-            opengl_station.set_ip(
-                int(id), f"{config.get_drone_ip(id)}:{config.get_drone_port(id)}"
-            )
+        self.takeoff_button = QPushButton("takeoff")
+        self.takeoff_button.clicked.connect(lambda: self.button_click(station_server.takeoff))
 
-    async def check_station(self):
-        """Runs opengl window until it should close"""
+        self.step_button = QPushButton("step")
+        self.step_button.clicked.connect(lambda: self.button_click(station_server.step))
 
-        while not opengl_station.should_close():
-            match opengl_station.loop():
-                case opengl_station.LoopReturn.Nothing:
-                    pass
-                case opengl_station.LoopReturn.Arm:
-                    self.station_server.arm()
-                case opengl_station.LoopReturn.Takeoff:
-                    self.station_server.takeoff()
-                case opengl_station.LoopReturn.Step:
-                    self.station_server.step()
-                case opengl_station.LoopReturn.Land:
-                    self.station_server.land()
-                case opengl_station.LoopReturn.Halt:
-                    self.station_server.halt()
-                case unexpected:
-                    raise Error(f"unexpected LoopReturn '{unexpected}'")
-            await asyncio.sleep(0)
+        self.land_button = QPushButton("land")
+        self.land_button.clicked.connect(lambda: self.button_click(station_server.land))
 
-        opengl_station.cleanup()
-        self.station_server.stop()
+        self.halt_button = QPushButton("halt")
+        self.halt_button.clicked.connect(lambda: self.button_click(station_server.halt))
+
+        class Color(QWidget):
+            def __init__(self, color: str):
+                super().__init__()
+
+                self.setAutoFillBackground(True)
+                palette = self.palette()
+                palette.setColor(QPalette.ColorRole.Window, QColor(color))
+                self.setPalette(palette)
+
+        mainWidget = QWidget()
+        buttonWidget = QWidget()
+        buttonsWidget = Color("blue")
+
+        tmpTabs = Color("red")
+        tmpTabs.setFixedWidth(75)
+        self.opengl_gui = opengl_station.Gui()
+
+        mainBox = QHBoxLayout()
+        buttonSplit = QVBoxLayout()
+        buttons = QHBoxLayout()
+
+        mainWidget.setLayout(mainBox)
+        mainBox.setSpacing(0)
+        mainBox.setContentsMargins(0, 0, 0, 0)
+        mainBox.addWidget(tmpTabs)
+        mainBox.addWidget(buttonWidget)
+
+        buttonWidget.setLayout(buttonSplit)
+        buttonSplit.setSpacing(0)
+        buttonSplit.setContentsMargins(0, 0, 0, 0)
+        buttonSplit.addWidget(buttonsWidget)
+        buttonSplit.setStretch(0, 1)
+        buttonSplit.addWidget(self.opengl_gui)
+        buttonSplit.setStretch(1, 7)
+
+        buttonsWidget.setLayout(buttons)
+        buttons.setSpacing(0)
+        buttons.setContentsMargins(0, 0, 0, 0)
+
+        buttons.addWidget(self.arm_button)
+        self.arm_button.setMaximumHeight(1000)
+
+        buttons.addWidget(self.takeoff_button)
+        self.takeoff_button.setMaximumHeight(1000)
+
+        buttons.addWidget(self.step_button)
+        self.step_button.setMaximumHeight(1000)
+
+        buttons.addWidget(self.land_button)
+        self.land_button.setMaximumHeight(1000)
+
+        buttons.addWidget(self.halt_button)
+        self.halt_button.setMaximumHeight(1000)
+
+        self.setCentralWidget(mainWidget)
+
+    @override
+    def event(self, event: QEvent, /) -> bool:
+        match event.type():
+            case ArmEvent.event_number:
+                event = cast(ArmEvent, event)
+                self.opengl_gui.setState(
+                    int(event.id),
+                    opengl_station.DroneState.ARMED
+                    if event.armed
+                    else opengl_station.DroneState.CONNECTED,
+                )
+
+            case DroneConnectEvent.event_number:
+                event = cast(DroneConnectEvent, event)
+                self.opengl_gui.setState(int(event.id), opengl_station.DroneState.CONNECTED)
+
+            case DronePositionEvent.event_number:
+                event = cast(DronePositionEvent, event)
+                placed = self.place_in_expanse(loc_to_point(event.position))
+                self.opengl_gui.setPos(int(event.id), placed.x, placed.y, placed.z)
+
+            case opengl_station.GuiReadyEvent.event_number:
+                # add drones to opengl widget
+                config = self.station_server.config
+                for id in config.get_drone_ids()[1:]:
+                    self.opengl_gui.setIp(
+                        int(id), f"{config.get_drone_ip(id)}:{config.get_drone_port(id)}"
+                    )
+            case _:
+                return super().event(event)
+
+        return True
+
+    def button_click(self, function: Callable[[], None]):
+        function()
 
     def drone_connect_listener(self, drone_id: str):
         """Listens for drone connection to update opengl window"""
-
-        opengl_station.set_state(int(drone_id), opengl_station.DroneState.Connected)
+        QCoreApplication.sendEvent(self, DroneConnectEvent(int(drone_id)))
 
     def arm_listener(self, drone_id: str, armed: bool):
         """Listens for drone arming to update opengl window"""
+        QCoreApplication.sendEvent(self, ArmEvent(int(drone_id), armed))
 
-        opengl_station.set_state(
-            int(drone_id),
-            opengl_station.DroneState.Armed
-            if armed
-            else opengl_station.DroneState.Disconnected,
-        )
 
     def drone_position_listener(
         self, drone_id: str, position: dronekit.LocationGlobalRelative
     ):
         """Listens for drone position changes to update opengl window"""
-
-        placed = self.place_in_expanse(loc_to_point(position))
-        opengl_station.set_pos(int(drone_id), placed.x, placed.y, placed.z)
+        QCoreApplication.sendEvent(self, DronePositionEvent(int(drone_id), position))
 
     def calc_expanse(self) -> tuple[Point3d, Point3d]:
         """Calculates the minimum and maximum positions which the drones will take"""

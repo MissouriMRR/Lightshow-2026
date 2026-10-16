@@ -9,10 +9,8 @@
 #include "glm/glm.hpp"
 #include "shader.h"
 
-#include "glm/detail/type_vec.hpp"
 #include <string>
 
-#include "glm/glm.hpp"
 #include "shader.h"
 #include <map>
 

@@ -10,6 +10,8 @@ from common.drone_state import DroneState
 from drone.json_parser import ConfigParser
 from station.station_connection import StationConnection, StationConnectionLike
 
+from PySide6.QtCore import QCoreApplication, QEvent
+
 
 class Message(Enum):
     ARM = 0
