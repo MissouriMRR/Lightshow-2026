@@ -1,6 +1,39 @@
 cmake_minimum_required(VERSION 3.23)
 project(Station)
 
+set(CMAKE_BUILD_TYPE "DEBUG")
+
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets OpenGL OpenGLWidgets)
+
+set(VENV_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../.venv/lib/python3.12/site-packages")
+list(APPEND CMAKE_PREFIX_PATH "${VENV_DIR}/shiboken6/lib/cmake/Shiboken6")
+list(APPEND CMAKE_PREFIX_PATH "${VENV_DIR}/shiboken6_generator/lib/cmake/Shiboken6Tools")
+list(APPEND CMAKE_PREFIX_PATH "${VENV_DIR}/PySide6/lib/cmake/PySide6")
+
+find_package(Shiboken6Tools REQUIRED)
+
+shiboken_generator_create_binding(
+    EXTENSION_TARGET opengl_station
+    GENERATED_SOURCES 
+        "${CMAKE_CURRENT_BINARY_DIR}/opengl_station/opengl_station_module_wrapper.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/opengl_station/guireadyevent_wrapper.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/opengl_station/gui_wrapper.cpp"
+    HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/glmKiller.h"
+    TYPESYSTEM_FILE "${CMAKE_CURRENT_SOURCE_DIR}/typesystem.xml"
+    SHIBOKEN_EXTRA_OPTIONS 
+        "-I${CMAKE_CURRENT_SOURCE_DIR}/include"
+    LIBRARY_TARGET source_lib
+    QT_MODULES
+        "Core"
+        "Gui"
+        "Widgets"
+        "OpenGL"
+        "OpenGLWidgets"
+)
+
+set_target_properties(opengl_station PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/..")
+
 add_library(source_lib OBJECT)
 
 set_target_properties(source_lib PROPERTIES
@@ -13,10 +46,9 @@ target_include_directories(source_lib
 )
 
 target_link_libraries(source_lib
-    INTERFACE
+    PUBLIC
         freetype 
         assimp 
-        glfw 
         GL 
         m 
         X11 
@@ -28,6 +60,11 @@ target_link_libraries(source_lib
         bz2 
         png 
         brotlidec
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Widgets
+        Qt6::OpenGL
+        Qt6::OpenGLWidgets
 )
 
 target_sources(source_lib
@@ -42,6 +79,7 @@ target_sources(source_lib
         stbi_image.cpp
         drone.cpp
         ground.cpp
+        gui.cpp
 )
 
 target_compile_definitions(source_lib
@@ -50,6 +88,7 @@ target_compile_definitions(source_lib
 )
 
 add_executable(Station)
+target_compile_options(Station PRIVATE -fPIC)
 
 target_link_libraries(Station
     PRIVATE
@@ -59,46 +98,6 @@ target_link_libraries(Station
 target_sources(Station
     PRIVATE
         main.cpp
-)
-
-add_library(opengl_station SHARED)
-
-execute_process(
-    COMMAND uv run python3 -m pybind11 --includes
-    OUTPUT_VARIABLE PYBIND_INCLUDES_RAW
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-string(REPLACE "-I" "" PYBIND_INCLUDES_CLEAN "${PYBIND_INCLUDES_RAW}")
-separate_arguments(PYBIND_INCLUDES NATIVE_COMMAND "${PYBIND_INCLUDES_CLEAN}")
-
-execute_process(
-    COMMAND python3-config --extension-suffix
-    OUTPUT_VARIABLE PYTHON_EXTENSION_SUFFIX
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-set_target_properties(opengl_station PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-    OUTPUT_NAME "opengl_station"
-    PREFIX ""
-    SUFFIX "${PYTHON_EXTENSION_SUFFIX}"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
-)
-
-target_include_directories(opengl_station
-    PRIVATE
-        ${PYBIND_INCLUDES}
-)
-
-target_link_libraries(opengl_station
-    PRIVATE
-        source_lib
-)
-
-target_sources(opengl_station
-    PRIVATE
-        bindings.cpp
 )
 
 file(GLOB_RECURSE FILES_TO_FORMAT

@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <glad/glad.h>
 
 Shader::Shader(std::string vertexPath, std::string fragmentPath) {
     std::string vertexCode;
