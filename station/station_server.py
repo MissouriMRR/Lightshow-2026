@@ -6,6 +6,7 @@ from tkinter import messagebox
 
 import dronekit
 
+from common.config import NETWORK_CONFIG_PATH, SHOW_PATH
 from common.drone_state import DroneState
 from drone.json_parser import ConfigParser
 from station.station_connection import StationConnection, StationConnectionLike
@@ -42,7 +43,7 @@ class StationServer:
         return not len(list(filter(lambda x: not x.armed, self.drones.values())))
 
     def __init__(self, connection: StationConnectionLike | None = None) -> None:
-        self.config = ConfigParser("./models/Example jsons/example_config.json")
+        self.config = ConfigParser(NETWORK_CONFIG_PATH, SHOW_PATH)
         self.config.set_self_id("0")
 
         drone_frames = self.config.get_all_drone_frames()  # TODO not this

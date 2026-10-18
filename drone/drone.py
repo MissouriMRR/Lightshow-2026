@@ -3,11 +3,14 @@ from enum import Enum
 
 import dronekit
 
+from common.config import NETWORK_CONFIG_PATH, SHOW_PATH
 from drone.drone_connection import DroneConnection
 from drone.goto import move_to
 from drone.json_parser import ConfigParser
 from drone.sim_vehicle import SimVehicle
 from drone.vehicle import AnyVehicle
+
+MIN_FRAME_ALT_M = 1.0  # Frames lower than this at the start of the show are skipped
 
 
 class Drone:
@@ -37,7 +40,7 @@ class Drone:
         use_test_vehicle: bool = True,
         vehicle_connection_string: str = "",
     ) -> None:
-        self.jsonConfigData = ConfigParser("./models/Example jsons/example_config.json")
+        self.jsonConfigData = ConfigParser(NETWORK_CONFIG_PATH, SHOW_PATH)
         self.jsonConfigData.set_self_id(drone_id)
 
         if connection is None:
@@ -61,6 +64,11 @@ class Drone:
                 raise ValueError(
                     f"Frame {name!r} for drone {drone_id} has no valid coordinates"
                 )
+            # Skip frames before takeoff (drone still on the ground) so the
+            # first frame is airborne; takeoff() climbs straight to model[0].
+            # TODO: remove once timed playback handles takeoff itself
+            if not self.model and location.alt < MIN_FRAME_ALT_M:
+                continue
             self.model.append(location)
 
         self.show_index = -1

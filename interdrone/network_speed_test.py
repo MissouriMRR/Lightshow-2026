@@ -3,6 +3,7 @@ import asyncio
 import queue
 import threading
 
+from common.config import NETWORK_CONFIG_PATH
 from drone.json_parser import ConfigParser
 from interdrone.message_types import Message, MessageType
 from interdrone.networking_interface import NetworkingInterface
@@ -16,7 +17,7 @@ async def main():
     args = parser.parse_args()
 
     # Load config
-    jsonConfigData = ConfigParser("./models/Example jsons/example_config.json")
+    jsonConfigData = ConfigParser(NETWORK_CONFIG_PATH)
 
     # Get drone ID
     if args.id is not None:

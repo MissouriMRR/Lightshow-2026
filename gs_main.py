@@ -10,6 +10,7 @@ import queue
 import threading
 import time
 
+from common.config import NETWORK_CONFIG_PATH
 from drone.json_parser import ConfigParser
 from interdrone.networking_interface import NetworkingInterface
 from interdrone.networking_thread import NetworkingThread
@@ -19,7 +20,7 @@ from station.ground_station_controller import GroundStationController
 def main() -> None:
     print("[GS] Ground Station Starting...\n")
 
-    config = ConfigParser("./models/Example jsons/example_config.json")
+    config = ConfigParser(NETWORK_CONFIG_PATH)
     config.set_self_id("0")  # GS is always drone ID 0
 
     gs = GroundStationController(config)

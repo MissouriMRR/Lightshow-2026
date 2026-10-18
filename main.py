@@ -11,6 +11,7 @@ import queue
 import threading
 import time
 
+from common.config import NETWORK_CONFIG_PATH
 from drone.drone_command_handler import DroneCommandHandler
 from drone.json_parser import ConfigParser
 from interdrone.message_types import Message, MessageType
@@ -23,7 +24,7 @@ def main() -> None:
     parser.add_argument("-i", "--id", help="Self ID", type=str)
     args = parser.parse_args()
 
-    json_config_data = ConfigParser("./models/Example jsons/example_config.json")
+    json_config_data = ConfigParser(NETWORK_CONFIG_PATH)
 
     if args.id is not None:
         drone_id = str(args.id)
