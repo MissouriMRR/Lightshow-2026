@@ -71,7 +71,7 @@ class DroneConnection:
 
         if self.command_handler.pending_command:
             match self.command_handler.pending_command.message.id:
-                case MessageType.ARM:
+                case MessageType.ARM_RESPONSE:
                     await self.drone.arm()
                 case MessageType.TAKEOFF:
                     await self.drone.takeoff()
