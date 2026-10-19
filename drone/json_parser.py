@@ -5,6 +5,8 @@ from typing import Any
 
 import dronekit
 
+from common.config import MIN_FRAME_ALT_M
+
 
 class ConfigParser:
     """Parser for drone swarm configuration JSON files."""
@@ -158,6 +160,27 @@ class ConfigParser:
         """
         frames = self.config_data.get("show", {}).get(drone_id, {})
         return list(frames.keys())
+
+    def get_flight_frame_names(self, drone_id: str) -> list[str]:
+        """Get the frame names a drone flies, in order.
+
+        Skips frames at the start of the show that are below MIN_FRAME_ALT_M
+        (drone still on the ground), so the first name is the frame takeoff
+        climbs to. The drone and ground station both use this so they agree
+        on the number of frame steps.
+
+        Args:
+            drone_id: Drone ID (as string).
+
+        Returns:
+            List of frame name strings, or empty list if drone not found.
+        """
+        names = self.get_frame_names(drone_id)
+        for i, name in enumerate(names):
+            coords = self.get_frame_coordinates(drone_id, name)
+            if coords is not None and coords[2] >= MIN_FRAME_ALT_M:
+                return names[i:]
+        return []
 
     def get_frame_coordinates(
         self, drone_id: str, frame_name: str

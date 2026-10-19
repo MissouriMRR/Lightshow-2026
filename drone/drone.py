@@ -10,8 +10,6 @@ from drone.json_parser import ConfigParser
 from drone.sim_vehicle import SimVehicle
 from drone.vehicle import AnyVehicle
 
-MIN_FRAME_ALT_M = 1.0  # Frames lower than this at the start of the show are skipped
-
 
 class Drone:
     class State(Enum):
@@ -58,17 +56,12 @@ class Drone:
 
         # TODO: Implement with JSON "Show" Class object
         self.model = []
-        for name in self.jsonConfigData.get_frame_names(drone_id):
+        for name in self.jsonConfigData.get_flight_frame_names(drone_id):
             location = self.jsonConfigData.get_frame_location(drone_id, name)
             if location is None:
                 raise ValueError(
                     f"Frame {name!r} for drone {drone_id} has no valid coordinates"
                 )
-            # Skip frames before takeoff (drone still on the ground) so the
-            # first frame is airborne; takeoff() climbs straight to model[0].
-            # TODO: remove once timed playback handles takeoff itself
-            if not self.model and location.alt < MIN_FRAME_ALT_M:
-                continue
             self.model.append(location)
 
         self.show_index = -1
@@ -159,6 +152,9 @@ class Drone:
         )
 
     async def step(self) -> None:
+        if self.show_index + 1 >= len(self.model):
+            print(f"[Drone] Already at last frame ({len(self.model)}), ignoring step")
+            return
         self.show_index += 1
         await move_to(
             self.vehicle,
