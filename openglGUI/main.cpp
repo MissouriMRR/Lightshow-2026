@@ -9,12 +9,12 @@
 #include "mesh.h"
 #include "qmainwindow.h"
 #include <QApplication>
+#include <QEvent>
 #include <QWindow>
 #include <iostream>
-#include <QEvent>
 
 class Filtery : public QObject {
-public:
+  public:
     Filtery(Gui *gui) : gui(gui) {}
 
     Gui *gui;
@@ -48,4 +48,3 @@ int main() {
 
     app.exec();
 }
-

@@ -7,11 +7,11 @@
 #include "mainloop.h"
 
 #include <QApplication>
-#include <QWidget>
-#include <QSurfaceFormat>
-#include <QOpenGLContext>
-#include <QTime>
 #include <QEvent>
+#include <QOpenGLContext>
+#include <QSurfaceFormat>
+#include <QTime>
+#include <QWidget>
 
 #include "mesh.h"
 #include "qdatetime.h"
@@ -32,13 +32,11 @@
 #include "camera.h"
 #include "drone.h"
 #include "ground.h"
-#include "quader.h"
 #include "gui.h"
+#include "quader.h"
 
 #ifndef ASSET_DIR
 #define ASSET_DIR ""
 #endif
 
-int setup() {
-    return 0;
-}
+int setup() { return 0; }

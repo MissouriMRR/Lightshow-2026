@@ -7,13 +7,13 @@
 #include "mesh.h"
 #include <iostream>
 
+#include "glad/glad.h"
 #include "shader.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <cstddef>
 #include <vector>
-#include "glad/glad.h"
 
 Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, unsigned int instanceVBO) {
     this->vertices = vertices;

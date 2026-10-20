@@ -4,9 +4,9 @@
  */
 
 #include "ground.h"
+#include "glad/glad.h"
 #include "glm/glm.hpp"
 #include <glm/gtc/type_ptr.hpp>
-#include "glad/glad.h"
 
 Ground::Ground(std::string assetDir)
     : planeShader(assetDir + "shaders/planeVertex.glsl", assetDir + "shaders/planeFragment.glsl") {

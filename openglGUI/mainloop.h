@@ -10,9 +10,9 @@
 #include <glm/common.hpp>
 #include <string>
 
-#include <QWindow>
-#include "shader.h"
 #include "gui.h"
+#include "shader.h"
+#include <QWindow>
 
 int setup();
 

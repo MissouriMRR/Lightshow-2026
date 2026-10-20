@@ -4,24 +4,24 @@
 #include "button.h"
 #include "camera.h"
 #include "drone.h"
-#include <QWindow>
-#include <QKeyEvent>
+#include "glm/glm.hpp"
+#include "ground.h"
 #include <QEvent>
+#include <QKeyEvent>
+#include <QMainWindow>
 #include <QOpenGLContext>
 #include <QOpenGLWidget>
-#include <QMainWindow>
-#include "ground.h"
-#include "glm/glm.hpp"
+#include <QWindow>
 
 class GuiReadyEvent : public QEvent {
-    public:
-        GuiReadyEvent();
+  public:
+    GuiReadyEvent();
 
-        static int event_number;
+    static int event_number;
 };
 
 class Gui : public QOpenGLWidget {
-public:
+  public:
     Gui(QWidget *parent = nullptr);
 
     void setupShader(Shader *shader);
@@ -37,8 +37,7 @@ public:
 
     Drone *droney = nullptr;
 
-
-protected:
+  protected:
     void keyPressEvent(QKeyEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
@@ -47,7 +46,7 @@ protected:
     void resizeGL(int w, int h) override;
     void initializeGL() override;
 
-private:
+  private:
     const int START_WIDTH = 800;
     const int START_HEIGHT = 600;
     const int SIDE_PANEL_SIZE = 100;
@@ -74,7 +73,7 @@ private:
 
     bool click = false, drag = false;
 
-    float xposRaw = START_WIDTH / 2.0, yposRaw = START_HEIGHT / 2.0; 
+    float xposRaw = START_WIDTH / 2.0, yposRaw = START_HEIGHT / 2.0;
 };
 
 #endif

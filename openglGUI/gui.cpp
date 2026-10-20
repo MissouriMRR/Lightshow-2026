@@ -2,11 +2,11 @@
 
 #include "gui.h"
 
-#include <QSurfaceFormat>
-#include <QOpenGLContext>
-#include <QTimer>
-#include <QDateTime>
 #include <QCoreApplication>
+#include <QDateTime>
+#include <QOpenGLContext>
+#include <QSurfaceFormat>
+#include <QTimer>
 
 #include <iostream>
 
@@ -22,17 +22,14 @@ int GuiReadyEvent::event_number = QEvent::registerEventType();
 
 GuiReadyEvent::GuiReadyEvent() : QEvent((QEvent::Type)event_number) {}
 
-
-Gui::Gui(QWidget *parent) {
-    setMouseTracking(true);
-}
+Gui::Gui(QWidget *parent) { setMouseTracking(true); }
 
 void Gui::initializeGL() {
     long time;
     std::time(&time);
     srand(time);
 
-    auto getProcAddr = [] (const char *name) -> void * {
+    auto getProcAddr = [](const char *name) -> void * {
         return (void *)QOpenGLContext::currentContext()->getProcAddress(name);
     };
 
@@ -133,7 +130,8 @@ void Gui::checkButtons(QMouseEvent *event) {
     getScaledCursorPos(&xpos, &ypos);
 
     click = true;
-    click &= !droney->checkButtons(xpos, ypos, event->modifiers() & Qt::ShiftModifier, event->modifiers() & Qt::ControlModifier);
+    click &= !droney->checkButtons(xpos, ypos, event->modifiers() & Qt::ShiftModifier,
+                                   event->modifiers() & Qt::ControlModifier);
     drag = click && xpos < 0.9;
     repaint();
 }
@@ -142,7 +140,8 @@ void Gui::checkRelease(QMouseEvent *event) {
     float xpos, ypos;
     getScaledCursorPos(&xpos, &ypos);
 
-    if (!droney->checkDrones(xpos, ypos, event->modifiers() & Qt::ShiftModifier, event->modifiers() & Qt::ControlModifier, &camera, projection)) {
+    if (!droney->checkDrones(xpos, ypos, event->modifiers() & Qt::ShiftModifier,
+                             event->modifiers() & Qt::ControlModifier, &camera, projection)) {
         droney->resetCurrentDrones();
         repaint();
     }
@@ -162,7 +161,8 @@ void Gui::mouseMoveEvent(QMouseEvent *event) {
         camera.rotate(xOffset, yOffset);
         repaint();
     } else if (rightMouseDown) {
-        camera.translate(glm::vec3(xOffset * START_WIDTH / width(), yOffset * START_HEIGHT / height(), 0) * panSensitivity);
+        camera.translate(glm::vec3(xOffset * START_WIDTH / width(), yOffset * START_HEIGHT / height(), 0) *
+                         panSensitivity);
         repaint();
     }
 }
@@ -183,24 +183,28 @@ void Gui::setExpanse(glm::vec3 min, glm::vec3 max) {
 
 void Gui::setColor(int id, float r, float g, float b, float a) {
     if (droney == nullptr) std::cout << "droney is uninitialized you idiot" << std::endl;
-    else droney->setColor(id, r, g, b, a); 
+    else
+        droney->setColor(id, r, g, b, a);
     update();
 }
 
 void Gui::setPos(int id, float x, float y, float z) {
     if (droney == nullptr) std::cout << "droney is uninitialized you idiot" << std::endl;
-    else droney->setPos(id, x, y, z); 
+    else
+        droney->setPos(id, x, y, z);
     update();
 }
 
-void Gui::setIp(int id, std::string ip) { 
+void Gui::setIp(int id, std::string ip) {
     if (droney == nullptr) std::cout << "droney is uninitialized you idiot" << std::endl;
-    else droney->setIp(id, ip); 
+    else
+        droney->setIp(id, ip);
     update();
 }
 
 void Gui::setState(int id, DroneState state) {
     if (droney == nullptr) std::cout << "droney is uninitialized you idiot" << std::endl;
-    else droney->setState(id, state); 
+    else
+        droney->setState(id, state);
     update();
 }
