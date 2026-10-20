@@ -3,102 +3,114 @@ project(Station)
 
 set(CMAKE_BUILD_TYPE "DEBUG")
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets OpenGL OpenGLWidgets)
+find_package(Qt6 COMPONENTS Core Gui Widgets OpenGL OpenGLWidgets)
 
 set(VENV_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../.venv/lib/python3.12/site-packages")
 list(APPEND CMAKE_PREFIX_PATH "${VENV_DIR}/shiboken6/lib/cmake/Shiboken6")
 list(APPEND CMAKE_PREFIX_PATH "${VENV_DIR}/shiboken6_generator/lib/cmake/Shiboken6Tools")
 list(APPEND CMAKE_PREFIX_PATH "${VENV_DIR}/PySide6/lib/cmake/PySide6")
 
-find_package(Shiboken6Tools REQUIRED)
+find_package(Shiboken6Tools)
 
-shiboken_generator_create_binding(
-    EXTENSION_TARGET opengl_station
-    GENERATED_SOURCES 
-        "${CMAKE_CURRENT_BINARY_DIR}/opengl_station/opengl_station_module_wrapper.cpp"
-        "${CMAKE_CURRENT_BINARY_DIR}/opengl_station/guireadyevent_wrapper.cpp"
-        "${CMAKE_CURRENT_BINARY_DIR}/opengl_station/gui_wrapper.cpp"
-    HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/glmKiller.h"
-    TYPESYSTEM_FILE "${CMAKE_CURRENT_SOURCE_DIR}/typesystem.xml"
-    SHIBOKEN_EXTRA_OPTIONS 
-        "-I${CMAKE_CURRENT_SOURCE_DIR}/include"
-    LIBRARY_TARGET source_lib
-    QT_MODULES
-        "Core"
-        "Gui"
-        "Widgets"
-        "OpenGL"
-        "OpenGLWidgets"
-)
+option(DO_BUILD "Build the actual thing" ON)
 
-set_target_properties(opengl_station PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/..")
+if (DO_BUILD)
+    if (NOT Qt6_FOUND)
+        message(FATAL_ERROR "Qt6 Not Found; follow README")
+    endif()
 
-add_library(source_lib OBJECT)
+    if (NOT Shiboken6Tools_FOUND)
+        message(FATAL_ERROR "Shikoben6Tools Not Found; run uv sync --dev")
+    endif()
 
-set_target_properties(source_lib PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-)
+    shiboken_generator_create_binding(
+        EXTENSION_TARGET opengl_station
+        GENERATED_SOURCES 
+            "${CMAKE_CURRENT_BINARY_DIR}/opengl_station/opengl_station_module_wrapper.cpp"
+            "${CMAKE_CURRENT_BINARY_DIR}/opengl_station/guireadyevent_wrapper.cpp"
+            "${CMAKE_CURRENT_BINARY_DIR}/opengl_station/gui_wrapper.cpp"
+        HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/glmKiller.h"
+        TYPESYSTEM_FILE "${CMAKE_CURRENT_SOURCE_DIR}/typesystem.xml"
+        SHIBOKEN_EXTRA_OPTIONS 
+            "-I${CMAKE_CURRENT_SOURCE_DIR}/include"
+        LIBRARY_TARGET source_lib
+        QT_MODULES
+            "Core"
+            "Gui"
+            "Widgets"
+            "OpenGL"
+            "OpenGLWidgets"
+    )
 
-target_include_directories(source_lib
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
+    set_target_properties(opengl_station PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/..")
 
-target_link_libraries(source_lib
-    PUBLIC
-        freetype 
-        assimp 
-        GL 
-        m 
-        X11 
-        pthread 
-        Xi 
-        Xrandr 
-        dl 
-        z 
-        bz2 
-        png 
-        brotlidec
-        Qt6::Core
-        Qt6::Gui
-        Qt6::Widgets
-        Qt6::OpenGL
-        Qt6::OpenGLWidgets
-)
+    add_library(source_lib OBJECT)
 
-target_sources(source_lib
-    PRIVATE
-        mainloop.cpp
-        button.cpp
-        mesh.cpp
-        quader.cpp
-        shader.cpp
-        utils.cpp
-        glad.c
-        stbi_image.cpp
-        drone.cpp
-        ground.cpp
-        gui.cpp
-)
+    set_target_properties(source_lib PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+    )
 
-target_compile_definitions(source_lib
-    PRIVATE
-        ASSET_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/../assets/\"
-)
+    target_include_directories(source_lib
+        PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
 
-add_executable(Station)
-target_compile_options(Station PRIVATE -fPIC)
+    target_link_libraries(source_lib
+        PUBLIC
+            freetype 
+            assimp 
+            GL 
+            m 
+            X11 
+            pthread 
+            Xi 
+            Xrandr 
+            dl 
+            z 
+            bz2 
+            png 
+            brotlidec
+            Qt6::Core
+            Qt6::Gui
+            Qt6::Widgets
+            Qt6::OpenGL
+            Qt6::OpenGLWidgets
+    )
 
-target_link_libraries(Station
-    PRIVATE
-        source_lib
-)
+    target_sources(source_lib
+        PRIVATE
+            mainloop.cpp
+            button.cpp
+            mesh.cpp
+            quader.cpp
+            shader.cpp
+            utils.cpp
+            glad.c
+            stbi_image.cpp
+            drone.cpp
+            ground.cpp
+            gui.cpp
+    )
 
-target_sources(Station
-    PRIVATE
-        main.cpp
-)
+    target_compile_definitions(source_lib
+        PRIVATE
+            ASSET_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/../assets/\"
+    )
+
+    add_executable(Station)
+    target_compile_options(Station PRIVATE -fPIC)
+
+    target_link_libraries(Station
+        PRIVATE
+            source_lib
+    )
+
+    target_sources(Station
+        PRIVATE
+            main.cpp
+    )
+endif()
 
 file(GLOB_RECURSE FILES_TO_FORMAT
     "*.cpp"
