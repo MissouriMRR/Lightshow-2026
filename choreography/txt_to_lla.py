@@ -18,6 +18,7 @@ def txt_to_gps_centered_rgb(
     reference_alt: float,
     add_label: bool,
     scale: float = 1.0,
+    recenter: bool = True,
 ) -> None:
     R_earth = 6378137  # Earth radius (m)
     points: list[Point] = []
@@ -49,13 +50,17 @@ def txt_to_gps_centered_rgb(
         print("No valid points found in file.")
         return
 
-    # Compute centroid of the 3d model
-    centroid_x = sum(p[0] for p in points) / len(points)
-    centroid_y = sum(p[1] for p in points) / len(points)
-    centroid_z = sum(p[2] for p in points) / len(points)
-    print(
-        f"Model centered around ({centroid_x:.3f}, {centroid_y:.3f}, {centroid_z:.3f})"
-    )
+    # Compute centroid of the 3d model. Without recentering the points keep
+    # their own position (e.g. Skybrush coordinates already relative to the show center).
+    if recenter:
+        centroid_x = sum(p[0] for p in points) / len(points)
+        centroid_y = sum(p[1] for p in points) / len(points)
+        centroid_z = sum(p[2] for p in points) / len(points)
+        print(
+            f"Model centered around ({centroid_x:.3f}, {centroid_y:.3f}, {centroid_z:.3f})"
+        )
+    else:
+        centroid_x = centroid_y = centroid_z = 0.0
 
     gps_points: list[Point] = []
     for p in points:
@@ -93,6 +98,10 @@ def txt_to_gps_centered_rgb(
                 csv_file.write(f"{lat},{lon},{alt}\n")
     print(f"GPS CSV written -> {output_csv}")
 
+    # A base altitude of 0 means heights are above the ground (like the drones'
+    # relative altitudes); anything else is treated as height above sea level.
+    altitude_mode = "relativeToGround" if reference_alt == 0 else "absolute"
+
     # Write KML
     with open(output_kml, "w") as kmlfile:
         kmlfile.write("<?xml version='1.0' encoding='UTF-8'?>\n")
@@ -122,7 +131,7 @@ def txt_to_gps_centered_rgb(
             kmlfile.write("        </IconStyle>\n")
             kmlfile.write("      </Style>\n")
             kmlfile.write("      <Point>\n")
-            kmlfile.write("        <altitudeMode>absolute</altitudeMode>\n")
+            kmlfile.write(f"        <altitudeMode>{altitude_mode}</altitudeMode>\n")
             kmlfile.write(f"        <coordinates>{lon},{lat},{alt}</coordinates>\n")
             kmlfile.write("      </Point>\n")
             kmlfile.write("    </Placemark>\n")
@@ -159,13 +168,14 @@ def main() -> None:
     if default_coords == "y":
         reference_lat = 37.948557
         reference_lon = -91.783716
-        reference_alt = 400.0
+        reference_alt = 0.0
     else:
         reference_lat = float(input("Center latitude (e.g., 37.950177): "))
         reference_lon = float(input("Center longitude (e.g., -91.780905): "))
-        reference_alt = float(input("Base altitude (meters): "))
+        reference_alt = float(input("Base altitude (meters, 0 = relative to ground): "))
     scale = float(input("Scale (meters per XYZ unit, e.g., 1.0): "))
     add_label = input("Add drone labels? (y/n): ").lower() == "y"
+    recenter = input("Recenter model? (y/n, n for Skybrush files): ").lower() == "y"
 
     txt_to_gps_centered_rgb(
         txt_path,
@@ -176,6 +186,7 @@ def main() -> None:
         reference_alt,
         add_label,
         scale,
+        recenter,
     )
 
 

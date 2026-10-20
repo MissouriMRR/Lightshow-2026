@@ -5,35 +5,44 @@ from typing import Any
 
 import dronekit
 
+from common.config import MIN_FRAME_ALT_M
+
 
 class ConfigParser:
     """Parser for drone swarm configuration JSON files."""
 
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: str, show_path: str | None = None):
         """Initialize parser with a configuration file.
 
         Args:
-            config_path: Path to the JSON configuration file.
+            config_path: Path to the JSON configuration file (network settings).
+            show_path: Optional path to a show JSON file. Its "show" section
+                replaces the one in the configuration file, so every show/frame
+                getter reads from it. Note that save_config() then writes the
+                show back out together with the network settings.
 
         Raises:
-            FileNotFoundError: If the config file does not exist.
-            json.JSONDecodeError: If the config file is not valid JSON.
+            FileNotFoundError: If a config file does not exist.
+            json.JSONDecodeError: If a config file is not valid JSON.
         """
         self.config_path: str = config_path
-        self.config_data: dict[str, Any] = {}
-        self._load_config()
+        self.config_data: dict[str, Any] = self._load_json(config_path)
+        if show_path is not None:
+            self.config_data["show"] = self._load_json(show_path).get("show", {})
 
-    def _load_config(self) -> None:
-        """Load and parse the JSON configuration file."""
+    @staticmethod
+    def _load_json(path: str) -> dict[str, Any]:
+        """Load and parse a JSON configuration file."""
         try:
-            with open(self.config_path, "r") as f:
-                self.config_data = json.load(f)
-            logging.info("Loaded configuration from %s", self.config_path)
+            with open(path, "r") as f:
+                data: dict[str, Any] = json.load(f)
+            logging.info("Loaded configuration from %s", path)
+            return data
         except FileNotFoundError:
-            logging.error("Configuration file not found: %s", self.config_path)
+            logging.error("Configuration file not found: %s", path)
             raise
         except json.JSONDecodeError as e:
-            logging.error("Invalid JSON in configuration file: %s", e)
+            logging.error("Invalid JSON in configuration file %s: %s", path, e)
             raise
 
     # ============ GroundStation Configuration Access ============
@@ -152,6 +161,27 @@ class ConfigParser:
         frames = self.config_data.get("show", {}).get(drone_id, {})
         return list(frames.keys())
 
+    def get_flight_frame_names(self, drone_id: str) -> list[str]:
+        """Get the frame names a drone flies, in order.
+
+        Skips frames at the start of the show that are below MIN_FRAME_ALT_M
+        (drone still on the ground), so the first name is the frame takeoff
+        climbs to. The drone and ground station both use this so they agree
+        on the number of frame steps.
+
+        Args:
+            drone_id: Drone ID (as string).
+
+        Returns:
+            List of frame name strings, or empty list if drone not found.
+        """
+        names = self.get_frame_names(drone_id)
+        for i, name in enumerate(names):
+            coords = self.get_frame_coordinates(drone_id, name)
+            if coords is not None and coords[2] >= MIN_FRAME_ALT_M:
+                return names[i:]
+        return []
+
     def get_frame_coordinates(
         self, drone_id: str, frame_name: str
     ) -> list[float] | None:
@@ -195,6 +225,23 @@ class ConfigParser:
             logging.warning("Frame %s not found for drone %s", frame_name, drone_id)
             return None
         return frame.get("time_delay")
+
+    def get_frame_time(self, drone_id: str, frame_name: str) -> float | None:
+        """Get the show time for a specific frame.
+
+        Args:
+            drone_id: Drone ID (as string).
+            frame_name: Frame name (e.g., "frame 1").
+
+        Returns:
+            Seconds since the show started at which the drone should reach
+            this frame, or None if not found.
+        """
+        frame = self.config_data.get("show", {}).get(drone_id, {}).get(frame_name)
+        if frame is None:
+            logging.warning("Frame %s not found for drone %s", frame_name, drone_id)
+            return None
+        return frame.get("time")
 
     def get_frame_flight_speed(self, drone_id: str, frame_name: str) -> float | None:
         """Get the flight speed for a specific frame.
@@ -457,6 +504,28 @@ class ConfigParser:
             time_delay,
         )
 
+    def set_frame_time(self, drone_id: str, frame_name: str, time: float) -> None:
+        """Set the show time for a specific frame.
+
+        Args:
+            drone_id: Drone ID (as string).
+            frame_name: Frame name (e.g., "frame 1").
+            time: Seconds since the show started.
+        """
+        if "show" not in self.config_data:
+            self.config_data["show"] = {}
+        if drone_id not in self.config_data["show"]:
+            self.config_data["show"][drone_id] = {}
+        if frame_name not in self.config_data["show"][drone_id]:
+            self.config_data["show"][drone_id][frame_name] = {}
+        self.config_data["show"][drone_id][frame_name]["time"] = time
+        logging.info(
+            "Set time for frame %s of drone %s to %s",
+            frame_name,
+            drone_id,
+            time,
+        )
+
     def set_frame_flight_speed(
         self, drone_id: str, frame_name: str, flight_speed: float
     ) -> None:
@@ -712,6 +781,10 @@ class ConfigParser:
                         if "coordinates" not in frame_data:
                             errors.append(
                                 f"Frame {frame_name} for drone {drone_id} missing 'coordinates'"
+                            )
+                        if "time" not in frame_data:
+                            errors.append(
+                                f"Frame {frame_name} for drone {drone_id} missing 'time'"
                             )
                         if "time_delay" not in frame_data:
                             errors.append(

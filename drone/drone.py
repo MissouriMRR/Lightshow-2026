@@ -3,6 +3,7 @@ from enum import Enum
 
 import dronekit
 
+from common.config import NETWORK_CONFIG_PATH, SHOW_PATH
 from drone.drone_connection import DroneConnection
 from drone.goto import move_to
 from drone.json_parser import ConfigParser
@@ -37,7 +38,7 @@ class Drone:
         use_test_vehicle: bool = True,
         vehicle_connection_string: str = "",
     ) -> None:
-        self.jsonConfigData = ConfigParser("./models/Example jsons/example_config.json")
+        self.jsonConfigData = ConfigParser(NETWORK_CONFIG_PATH, SHOW_PATH)
         self.jsonConfigData.set_self_id(drone_id)
 
         if connection is None:
@@ -55,7 +56,7 @@ class Drone:
 
         # TODO: Implement with JSON "Show" Class object
         self.model = []
-        for name in self.jsonConfigData.get_frame_names(drone_id):
+        for name in self.jsonConfigData.get_flight_frame_names(drone_id):
             location = self.jsonConfigData.get_frame_location(drone_id, name)
             if location is None:
                 raise ValueError(
@@ -151,6 +152,9 @@ class Drone:
         )
 
     async def step(self) -> None:
+        if self.show_index + 1 >= len(self.model):
+            print(f"[Drone] Already at last frame ({len(self.model)}), ignoring step")
+            return
         self.show_index += 1
         await move_to(
             self.vehicle,
