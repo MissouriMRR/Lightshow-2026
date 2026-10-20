@@ -170,3 +170,9 @@ vision/mapping/results/*
 *.un~
 *.swp
 *.swo
+
+# Main directory run files
+# They exist to install Qt and are not needed in the repo
+
+/*.run
+
