@@ -18,7 +18,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include <istream>
 #include <ostream>
 #include <ranges>
 #include <string>
@@ -29,7 +28,8 @@
 #include "mesh.h"
 #include "shader.h"
 #include "stb_image.h"
-#include "utils.h"
+
+#include "glad/glad.h"
 
 const float buttonHeight = 0.02f;
 const float buttonWidth = 0.1f;

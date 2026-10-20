@@ -7,7 +7,6 @@ target_link_libraries(tests
     PUBLIC
         freetype 
         assimp 
-        glfw 
         GL 
         m 
         X11 

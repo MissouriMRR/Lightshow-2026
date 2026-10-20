@@ -7,6 +7,7 @@
 #include "mesh.h"
 #include <iostream>
 
+#include "glad/glad.h"
 #include "shader.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
