@@ -72,10 +72,9 @@ jobs:
         run: uv sync --dev
 
       - name: Install Qt
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.12.0'
-          archives: qtbase
+        run: |
+          uv pip install aqtinstall
+          uv run aqt install-qt linux desktop 6.12.0 --archives qtbase
 
       - name: Install cpp dependencies
         run: |

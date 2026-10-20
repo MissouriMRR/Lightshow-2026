@@ -5,7 +5,6 @@ sudo apt install libfreetype-dev libassimp-dev libx11-dev build-essential libxi-
 ```
 To install qt
 ```bash
-curl -OL https://download.qt.io/official_releases/online_installers/qt-online-installer-linux-x64-online.run
-chmod +x qt-online-installer-linux-x64-online.run
-./qt-online-installer-linux-x64-online.run --accept-licenses --default-answer --confirm-command install qt6.12.0-sdk
+uv pip install qtinstall
+uv run aqt install-qt linux desktop 6.12.0
 ```
