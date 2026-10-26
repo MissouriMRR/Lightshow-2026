@@ -52,27 +52,14 @@ jobs:
       - name: Install dependencies
         run: uv sync --dev
 
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.12.0'
-
-      - name: Install cpp dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y libfreetype-dev libassimp-dev libx11-dev build-essential libxi-dev libxrandr-dev zlib1g-dev libbz2-dev libpng-dev libbrotli-dev python3-dev
-
-      - name: Compile station
-        run: ./compileOpenglGUI.sh
+      - name: trick basedpyright
+        run: touch opengl_station.abi3.so
 
       - name: Run basedpyright
         run: uv run basedpyright --level error
 
-  clang-format:
+  compile-cpp:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: openglGUI
     steps:
       - uses: actions/checkout@v4
 
@@ -84,18 +71,35 @@ jobs:
       - name: Install dependencies
         run: uv sync --dev
 
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.12.0'
+      - parallel:
+        - name: Install Qt
+          run: |
+            uv pip install aqtinstall
+            uv run aqt install-qt linux desktop 6.12.0 --archives qtbase
 
-      - name: Install cmake-format
-        run: |
-          sudo apt update
-          sudo apt install -y cmake cmake-format
+        - name: Install cpp dependencies
+          uses: eclipse-score/apt-install@main
+          with:
+            packages: libfreetype-dev libassimp-dev libx11-dev build-essential libxi-dev libxrandr-dev zlib1g-dev libbz2-dev libpng-dev libbrotli-dev python3-dev
+
+      - name: Compile station
+        run: ./compileOpenglGUI.sh
+
+  clang-format:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: openglGUI
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format
+        uses: eclipse-score/apt-install@main
+        with:
+          packages: cmake clang-format
 
       - name: Init cmake
-        run: cmake -S . -B build
+        run: cmake -S . -B build -DDO_BUILD=OFF
 
       - name: Run clang-format format check
         run: cmake --build build -t check-format
