@@ -131,12 +131,6 @@ Next, we install QT (version 6.12.0) itself by running:
 
 `uv run aqt install-qt linux desktop 6.12.0`
 
-Set the environment variable so that clang uses the manually installed Qt version by running:
-
-`export Qt6_DIR=/home/joshua/Documents/Lightshow-2026/6.12.0/gcc_64/lib/cmake/Qt6`
-
-You can also set this value in your .bashrc.
-
 To compile the ground station, run:
 
 `./compileOpenglGUI.sh`
