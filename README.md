@@ -119,7 +119,7 @@ to make sure your virtual environment packages are up to date.
 
 Install relevant packages by running:
 
-`sudo apt install libfreetype-dev libassimp-dev libx11-dev build-essential libxi-dev libxrandr-dev zlib1g-dev libbz2-dev libpng-dev libbrotli-dev python3-dev cmake libopengl-dev libglx-dev libgl1-mesa-dev clang llvm python3-tk`
+`sudo apt install libfreetype-dev libassimp-dev libx11-dev build-essential libxi-dev libxrandr-dev zlib1g-dev libbz2-dev libpng-dev libbrotli-dev python3-dev cmake libopengl-dev libglx-dev libgl1-mesa-dev clang llvm python3-tk libvulkan-dev libxslt1.1`
 
 We now need to install QT. We can actually do this by using a package from uv called aqtinstall. Run:
 
