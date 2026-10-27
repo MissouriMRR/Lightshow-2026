@@ -1,6 +1,7 @@
 import asyncio
 import threading
 
+from PySide6.QtCore import QLoggingCategory
 from PySide6.QtGui import QSurfaceFormat
 from PySide6.QtWidgets import QApplication
 
@@ -16,6 +17,8 @@ def main() -> None:
     fmt.setSamples(4)
     fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CoreProfile)
     QSurfaceFormat.setDefaultFormat(fmt)
+
+    QLoggingCategory.setFilterRules("qt.widgets.painting.warning=false")
 
     app = QApplication([])
 
