@@ -61,7 +61,7 @@ class OSM(QQuickWidget):
 
     drone_points: dict[int, QGeoCoordinate]
 
-    def __init__(self):
+    def __init__(self, start: list[float]):
         super().__init__()
         self.setResizeMode(QQuickWidget.ResizeMode.SizeRootObjectToView)
 
@@ -71,6 +71,7 @@ class OSM(QQuickWidget):
         tmp_map_object = self.rootObject().findChild(QQuickItem, "Map")
         if tmp_map_object is not None:
             self.map_object = cast(Map, tmp_map_object)
+            self.map_object.setProperty("center", QGeoCoordinate(start[0], start[1]))
         else:
             raise FileNotFoundError("could not find Map in qml")
 
@@ -118,7 +119,7 @@ class OSM(QQuickWidget):
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
         if self.mouse_down:
             delta = QPointF(e.x(), e.y()) - self.last
-            delta.setX(delta.x() * self.getSize().x() / self.width())
+            delta.setX(-delta.x() * self.getSize().x() / self.width())
             delta.setY(delta.y() * self.getSize().y() / self.height())
 
             current: QGeoCoordinate = self.map_object.property("center")
@@ -145,7 +146,7 @@ class OSM(QQuickWidget):
     def paintEvent(self, event: QPaintEvent) -> None:
         self.overlay.set_points(self.place_points())
         self.overlay.repaint()
-        return super().paintEvent(event)
+        super().paintEvent(event)
 
     @override
     def resizeEvent(self, e: QResizeEvent) -> None:
@@ -160,6 +161,7 @@ class OSM(QQuickWidget):
             self.drone_points[pos_event.id] = QGeoCoordinate(
                 pos_event.position.lat, pos_event.position.lon
             )
+            self.update()
             return False
 
         return super().event(e)

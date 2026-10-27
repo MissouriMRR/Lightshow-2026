@@ -113,7 +113,13 @@ class OpenGLWindow(QMainWindow):
         tmpTabs.setFixedWidth(75)
 
         self.opengl_gui = opengl_station.Gui()
-        self.osm = OSM()
+
+        start_frame = self.station_server.config.get_frame_coordinates("1", "frame 1")
+        if start_frame is not None:
+            self.osm = OSM(start_frame)
+        else:
+            print("Initial frame not found")
+            self.osm = OSM([0, 0])
         self.osm.hide()
 
         mainBox = QHBoxLayout()

@@ -1,0 +1,3 @@
+import QtLocation;
+
+MapCircle {}
