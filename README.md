@@ -1,8 +1,7 @@
-# python-template
+# Lightshow-2026
 
-This is a template used for all new Python-based repositories for the team, setting up things like pre-commit hooks, uv environments, and CI/CD.
+This is the Lightshow team's repository for 2026! It contains the ground station and drone code that the Lightshow team created during the 2026-2027 academic year.
 
-This README contains instructions on how to get started with this template and how to start expanding it to fit what you need for your project.
 
 [You can also reference our team's general documentation site here.](https://missourimrr.github.io/docs/)
 
@@ -17,6 +16,8 @@ This README contains instructions on how to get started with this template and h
     - [Installing Dependencies](#installing-dependencies)
     - [Adding New Dependencies](#adding-new-dependencies)
     - [Pre-commit checks / `prek`](#pre-commit-checks--prek)
+	- [Installing the Drone Code](#installing-the-drone-code)
+	- [Installing the Ground Station](#installing-the-ground-station)
 - [Repository Structure](#repository-structure)
 - [Development](#development)
     - [Running Code](#running-code)
@@ -98,9 +99,51 @@ Run the command `prek install` to install the pre-commit hooks we use to check c
 
 You can test that this worked by running `prek`. This will run all of your code changes against the pre-commit hooks.
 
+### Installing the Drone Code
+
+The previous instructions shoul be sufficient to "install" the drone code, as it is simply in Python. To run the drone code, run
+`uv run main.py`
+
+### Installing the Ground Station
+
+Installing the ground station will be more involved, since it is partially written in C++. 
+
+<!-- VBox guest additions used in making of instructions -->
+<!-- May need to install bzip build-essential gcc make perl dkms -->
+
+As a precaution, run:
+
+`uv sync --dev`
+
+to make sure your virtual environment packages are up to date.
+
+Install relevant packages by running:
+
+`sudo apt install libfreetype-dev libassimp-dev libx11-dev build-essential libxi-dev libxrandr-dev zlib1g-dev libbz2-dev libpng-dev libbrotli-dev python3-dev cmake libopengl-dev libglx-dev libgl1-mesa-dev clang llvm python3-tk`
+
+We now need to install QT. We can actually do this by using a package from uv called aqtinstall. Run:
+
+`uv pip install aqtinstall`
+
+to install it.
+
+Next, we install QT (version 6.12.0) itself by running:
+
+`uv run aqt install-qt linux desktop 6.12.0`
+
+To compile the ground station, run:
+
+`./compileOpenglGUI.sh`
+
+The ground station can finally be ran with the following command:
+
+`uv run station_opengl.py`
+
 ## Repository Structure
 
-- `main.py` - The entry point of the project. This should run all of the other code that your project provides in most cases.
+- `main.py` - Simulates a drone, which connects over the network to the ground station.
+- `station_opengl.py` - The ground station, which currently simulates drones in flight.
+- `compileOpenglGUI.sh` - The script to compile the ground station's OpenGL frontend.
 - `pyproject.toml` - Project metadata, dependencies, and tool configurations for ruff, basedpyright, and uv.
 - `uv.lock` - The `uv` lockfile that pins the exact versions of all dependencies and keeps environments consistent.
 - `.python-version` - The Python version used by `uv` for this repository.
@@ -109,6 +152,7 @@ You can test that this worked by running `prek`. This will run all of your code 
 - `.github/workflows/` - The GitHub Actions CI/CD workflows that run linting and commit message checks.
 - `.venv/` - The virtual environment created by `uv sync`. It is not tracked by git.
 - `.gitignore` - Lists the files and folders that git should not track.
+- `.gitattributes` - Assigns attributes to files by their extension. It is useful in preventing line endings from being messed up by WSL work. 
 
 ## Development
 
