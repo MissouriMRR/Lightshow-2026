@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 
 from common.utils import loc_to_point
 from station.events import ArmEvent, DroneConnectEvent, DronePositionEvent
-from station.osm import OSM, Overlay
+from station.osm import OSM
 from station.point import Point3d
 from station.station_server import StationServer
 
@@ -127,12 +127,12 @@ class OpenGLWindow(QMainWindow):
         mainBox.addWidget(tmpTabs)
         mainBox.addWidget(buttonWidget)
 
-        tmpTabs.setLayout(tmpTabsLayout);
+        tmpTabs.setLayout(tmpTabsLayout)
         tmpTabsLayout.setSpacing(10)
         tmpTabsLayout.setContentsMargins(10, 10, 10, 10)
         tmpTabsLayout.addWidget(Tab("blue", mainBox, buttonWidget))
         tmpTabsLayout.addWidget(Tab("orange", mainBox, self.osm))
-        tmpTabsLayout.addWidget(QWidget()) # Spacer pushing tabs to top
+        tmpTabsLayout.addWidget(QWidget())  # Spacer pushing tabs to top
 
         buttonWidget.setLayout(buttonSplit)
         buttonSplit.setSpacing(0)
@@ -216,7 +216,9 @@ class OpenGLWindow(QMainWindow):
     ):
         """Listens for drone position changes to update opengl window"""
         QCoreApplication.sendEvent(self, DronePositionEvent(int(drone_id), position))
-        QCoreApplication.sendEvent(self.osm, DronePositionEvent(int(drone_id), position))
+        QCoreApplication.sendEvent(
+            self.osm, DronePositionEvent(int(drone_id), position)
+        )
 
     def calc_expanse(self) -> tuple[Point3d, Point3d]:
         """Calculates the minimum and maximum positions which the drones will take"""

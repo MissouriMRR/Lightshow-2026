@@ -3,12 +3,12 @@
 #include "gui.h"
 
 #include <QCoreApplication>
+#include <QCursor>
 #include <QDateTime>
+#include <QGuiApplication>
 #include <QOpenGLContext>
 #include <QSurfaceFormat>
 #include <QTimer>
-#include <QGuiApplication>
-#include <QCursor>
 
 #include <iostream>
 

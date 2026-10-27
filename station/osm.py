@@ -1,15 +1,22 @@
 from pathlib import Path
-from typing import Any, Callable, cast, override
+from typing import cast, override
 
-from PySide6.QtGui import QColor, QCursor, QGuiApplication, QMouseEvent, QPainter, QResizeEvent, QWheelEvent, QPaintEvent
-from PySide6.QtQuickWidgets import QQuickWidget
-from PySide6.QtQuick import QQuickItem
-from PySide6.QtCore import QEvent, QObject, QPoint, QRect, QUrl, Qt, QPointF
+from PySide6.QtCore import QEvent, QPoint, QPointF, Qt, QUrl
+from PySide6.QtGui import (
+    QGuiApplication,
+    QMouseEvent,
+    QPainter,
+    QPaintEvent,
+    QResizeEvent,
+    QWheelEvent,
+)
 from PySide6.QtPositioning import QGeoCoordinate
+from PySide6.QtQuick import QQuickItem
+from PySide6.QtQuickWidgets import QQuickWidget
 from PySide6.QtWidgets import QWidget
-from PySide6.QtCanvasPainter import QCanvasPainter, QCanvasPainterWidget
 
 from station.events import DronePositionEvent
+
 
 class Overlay(QWidget):
     points: list[QPoint]
@@ -34,7 +41,6 @@ class Overlay(QWidget):
         painter.end()
 
 
-
 # class for type checker
 class Map(QQuickItem):
     def fromCoordinate(self, _coord: QGeoCoordinate, _bound: bool) -> QPointF:
@@ -42,6 +48,7 @@ class Map(QQuickItem):
 
     def toCoordinate(self, _point: QPointF, _bound: bool) -> QGeoCoordinate:
         return QGeoCoordinate(0, 0)
+
 
 class OSM(QQuickWidget):
     map_object: Map
@@ -65,7 +72,7 @@ class OSM(QQuickWidget):
         if tmp_map_object is not None:
             self.map_object = cast(Map, tmp_map_object)
         else:
-            raise Exception("could not find Map in qml")
+            raise FileNotFoundError("could not find Map in qml")
 
         self.overlay = Overlay(self)
         self.drone_points = {}
@@ -73,18 +80,27 @@ class OSM(QQuickWidget):
 
     def getSize(self):
         top_left = self.map_object.toCoordinate(QPointF(0, 0), True)
-        bottom_right = self.map_object.toCoordinate(QPointF(*self.size().toTuple()), True)
-        return QPointF(abs(top_left.longitude() - bottom_right.longitude()),
-                       abs(top_left.latitude() - bottom_right.latitude()))
+        bottom_right = self.map_object.toCoordinate(
+            QPointF(*self.size().toTuple()), True
+        )
+        return QPointF(
+            abs(top_left.longitude() - bottom_right.longitude()),
+            abs(top_left.latitude() - bottom_right.latitude()),
+        )
 
     def place_points(self) -> list[QPoint]:
-        return [self.map_object.fromCoordinate(x, False).toPoint() for x in self.drone_points.values()]
+        return [
+            self.map_object.fromCoordinate(x, False).toPoint()
+            for x in self.drone_points.values()
+        ]
 
     @override
     def wheelEvent(self, e: QWheelEvent):
         zoom_amount = 1 if e.angleDelta().y() > 0 else -1
         current_zoom = self.map_object.property("zoomLevel")
-        self.map_object.setProperty("zoomLevel", min(15, max(2, current_zoom + zoom_amount)))
+        self.map_object.setProperty(
+            "zoomLevel", min(15, max(2, current_zoom + zoom_amount))
+        )
 
     @override
     def mousePressEvent(self, e: QMouseEvent) -> None:
@@ -104,13 +120,24 @@ class OSM(QQuickWidget):
             delta = QPointF(e.x(), e.y()) - self.last
             delta.setX(delta.x() * self.getSize().x() / self.width())
             delta.setY(delta.y() * self.getSize().y() / self.height())
-            
+
             current: QGeoCoordinate = self.map_object.property("center")
-            self.map_object.setProperty("center", QGeoCoordinate(current.latitude() + delta.y(), current.longitude() + delta.x()))
+            self.map_object.setProperty(
+                "center",
+                QGeoCoordinate(
+                    current.latitude() + delta.y(), current.longitude() + delta.x()
+                ),
+            )
 
             panned = self.map_object.property("center")
-            if abs(panned.longitude() - current.longitude()) < 0.000001 and delta.x() != 0:
-                self.map_object.setProperty("center", QGeoCoordinate(panned.latitude(), -current.longitude() + delta.x()))
+            if (
+                abs(panned.longitude() - current.longitude()) < 0.000001
+                and delta.x() != 0
+            ):
+                self.map_object.setProperty(
+                    "center",
+                    QGeoCoordinate(panned.latitude(), -current.longitude() + delta.x()),
+                )
 
         self.last = QPoint(e.x(), e.y())
 
@@ -130,7 +157,9 @@ class OSM(QQuickWidget):
     def event(self, e: QEvent) -> bool:
         if e.type() == DronePositionEvent.event_number:
             pos_event = cast(DronePositionEvent, e)
-            self.drone_points[pos_event.id] = QGeoCoordinate(pos_event.position.lat, pos_event.position.lon)
+            self.drone_points[pos_event.id] = QGeoCoordinate(
+                pos_event.position.lat, pos_event.position.lon
+            )
             return False
 
         return super().event(e)

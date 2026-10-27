@@ -1,5 +1,5 @@
-from PySide6.QtCore import QEvent
 import dronekit
+from PySide6.QtCore import QEvent
 
 
 class ArmEvent(QEvent):
@@ -31,4 +31,3 @@ class DroneConnectEvent(QEvent):
     def __init__(self, id: int):
         super().__init__(QEvent.Type(self.event_number))
         self.id = id
-
