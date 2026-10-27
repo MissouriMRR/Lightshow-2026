@@ -7,6 +7,8 @@
 #include <QOpenGLContext>
 #include <QSurfaceFormat>
 #include <QTimer>
+#include <QGuiApplication>
+#include <QCursor>
 
 #include <iostream>
 
@@ -113,6 +115,7 @@ void Gui::mousePressEvent(QMouseEvent *event) {
         leftMouseDown = true;
     } else if (event->button() == Qt::RightButton) {
         rightMouseDown = true;
+        QGuiApplication::setOverrideCursor(Qt::BlankCursor);
     }
 }
 
@@ -122,6 +125,7 @@ void Gui::mouseReleaseEvent(QMouseEvent *event) {
         leftMouseDown = false;
     } else if (event->button() == Qt::RightButton) {
         rightMouseDown = false;
+        QGuiApplication::restoreOverrideCursor();
     }
 }
 

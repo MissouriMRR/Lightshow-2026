@@ -15,39 +15,10 @@ from PySide6.QtWidgets import (
 )
 
 from common.utils import loc_to_point
+from station.events import ArmEvent, DroneConnectEvent, DronePositionEvent
+from station.osm import OSM, Overlay
 from station.point import Point3d
 from station.station_server import StationServer
-
-
-class ArmEvent(QEvent):
-    armed: bool
-    id: int
-    event_number: int = QEvent.registerEventType()
-
-    def __init__(self, id: int, armed: bool):
-        super().__init__(QEvent.Type(self.event_number))
-        self.armed = armed
-        self.id = id
-
-
-class DronePositionEvent(QEvent):
-    position: dronekit.LocationGlobalRelative
-    event_number: int = QEvent.registerEventType()
-    id: int
-
-    def __init__(self, id: int, position: dronekit.LocationGlobalRelative):
-        super().__init__(QEvent.Type(self.event_number))
-        self.position = position
-        self.id = id
-
-
-class DroneConnectEvent(QEvent):
-    event_number: int = QEvent.registerEventType()
-    id: int
-
-    def __init__(self, id: int):
-        super().__init__(QEvent.Type(self.event_number))
-        self.id = id
 
 
 class Color(QWidget):
@@ -92,6 +63,7 @@ class OpenGLWindow(QMainWindow):
     expanse: tuple[Point3d, Point3d]
 
     opengl_gui: opengl_station.Gui
+    osm: OSM
 
     arm_button: QPushButton
     takeoff_button: QPushButton
@@ -141,6 +113,8 @@ class OpenGLWindow(QMainWindow):
         tmpTabs.setFixedWidth(75)
 
         self.opengl_gui = opengl_station.Gui()
+        self.osm = OSM()
+        self.osm.hide()
 
         mainBox = QHBoxLayout()
         buttonSplit = QVBoxLayout()
@@ -157,7 +131,7 @@ class OpenGLWindow(QMainWindow):
         tmpTabsLayout.setSpacing(10)
         tmpTabsLayout.setContentsMargins(10, 10, 10, 10)
         tmpTabsLayout.addWidget(Tab("blue", mainBox, buttonWidget))
-        tmpTabsLayout.addWidget(Tab("nope", mainBox, Color("orange")))
+        tmpTabsLayout.addWidget(Tab("orange", mainBox, self.osm))
         tmpTabsLayout.addWidget(QWidget()) # Spacer pushing tabs to top
 
         buttonWidget.setLayout(buttonSplit)
@@ -211,6 +185,7 @@ class OpenGLWindow(QMainWindow):
                 event = cast(DronePositionEvent, event)
                 placed = self.place_in_expanse(loc_to_point(event.position))
                 self.opengl_gui.setPos(int(event.id), placed.x, placed.y, placed.z)
+                return False
 
             case opengl_station.GuiReadyEvent.event_number:
                 # add drones to opengl widget
@@ -241,6 +216,7 @@ class OpenGLWindow(QMainWindow):
     ):
         """Listens for drone position changes to update opengl window"""
         QCoreApplication.sendEvent(self, DronePositionEvent(int(drone_id), position))
+        QCoreApplication.sendEvent(self.osm, DronePositionEvent(int(drone_id), position))
 
     def calc_expanse(self) -> tuple[Point3d, Point3d]:
         """Calculates the minimum and maximum positions which the drones will take"""
