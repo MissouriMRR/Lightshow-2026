@@ -3,10 +3,11 @@ from typing import cast, override
 
 import dronekit
 import opengl_station  # loads opengl_station shared library that the c++ was compiled into
-from PySide6.QtCore import QCoreApplication, QEvent
-from PySide6.QtGui import QColor, QPalette
+from PySide6.QtCore import QCoreApplication, QEvent, Qt
+from PySide6.QtGui import QColor, QMouseEvent, QPalette
 from PySide6.QtWidgets import (
     QHBoxLayout,
+    QLayout,
     QMainWindow,
     QPushButton,
     QVBoxLayout,
@@ -47,6 +48,41 @@ class DroneConnectEvent(QEvent):
     def __init__(self, id: int):
         super().__init__(QEvent.Type(self.event_number))
         self.id = id
+
+
+class Color(QWidget):
+    def __init__(self, color: str):
+        super().__init__()
+
+        self.setAutoFillBackground(True)
+        palette = self.palette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(color))
+        self.setPalette(palette)
+
+
+class Tab(Color):
+    tab_layout: QLayout
+    widget: QWidget
+
+    def __init__(self, color: str, layout: QLayout, widget: QWidget):
+        super().__init__(color)
+
+        self.tab_layout = layout
+        self.widget = widget
+
+        self.setFixedHeight(55)
+
+    @override
+    def mouseReleaseEvent(self, e: QMouseEvent):
+        if e.button() == Qt.MouseButton.LeftButton:
+            current_widget = self.tab_layout.itemAt(self.tab_layout.count() - 1)
+            if current_widget is not None:
+                to_kill = current_widget.widget()
+                if to_kill is not None:
+                    self.tab_layout.removeWidget(to_kill)
+                    to_kill.hide()
+            self.tab_layout.addWidget(self.widget)
+            self.widget.show()
 
 
 class OpenGLWindow(QMainWindow):
@@ -97,32 +133,32 @@ class OpenGLWindow(QMainWindow):
         self.halt_button = QPushButton("halt")
         self.halt_button.clicked.connect(lambda: self.button_click(station_server.halt))
 
-        class Color(QWidget):
-            def __init__(self, color: str):
-                super().__init__()
-
-                self.setAutoFillBackground(True)
-                palette = self.palette()
-                palette.setColor(QPalette.ColorRole.Window, QColor(color))
-                self.setPalette(palette)
-
         mainWidget = QWidget()
         buttonWidget = QWidget()
         buttonsWidget = Color("blue")
 
         tmpTabs = Color("red")
         tmpTabs.setFixedWidth(75)
+
         self.opengl_gui = opengl_station.Gui()
 
         mainBox = QHBoxLayout()
         buttonSplit = QVBoxLayout()
         buttons = QHBoxLayout()
+        tmpTabsLayout = QVBoxLayout()
 
         mainWidget.setLayout(mainBox)
         mainBox.setSpacing(0)
         mainBox.setContentsMargins(0, 0, 0, 0)
         mainBox.addWidget(tmpTabs)
         mainBox.addWidget(buttonWidget)
+
+        tmpTabs.setLayout(tmpTabsLayout);
+        tmpTabsLayout.setSpacing(10)
+        tmpTabsLayout.setContentsMargins(10, 10, 10, 10)
+        tmpTabsLayout.addWidget(Tab("blue", mainBox, buttonWidget))
+        tmpTabsLayout.addWidget(Tab("nope", mainBox, Color("orange")))
+        tmpTabsLayout.addWidget(QWidget()) # Spacer pushing tabs to top
 
         buttonWidget.setLayout(buttonSplit)
         buttonSplit.setSpacing(0)
