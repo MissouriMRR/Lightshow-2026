@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QVBoxLayout,
     QWidget,
+    QLabel
 )
 
 from common.utils import loc_to_point
@@ -20,6 +21,7 @@ from station.osm import OSM
 from station.point import Point3d
 from station.station_server import StationServer
 
+from copy import deepcopy
 
 class Color(QWidget):
     def __init__(self, color: str):
@@ -31,21 +33,37 @@ class Color(QWidget):
         self.setPalette(palette)
 
 
-class Tab(Color):
+class Tab(QLabel):
     tab_layout: QLayout
     widget: QWidget
+    defined_color: str
 
-    def __init__(self, color: str, layout: QLayout, widget: QWidget):
+    def __init__(self, color: str, layout: QLayout, widget: QWidget,
+                 tab_text: str):
         super().__init__(color)
+
+        self.setAutoFillBackground(True)
+        palette = self.palette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(color))
+        self.setPalette(palette)
+
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.tab_layout = layout
         self.widget = widget
+        self.defined_color = color
 
-        self.setFixedHeight(55)
+        self.setText(tab_text)
+
+        self.setFixedHeight(25)
 
     @override
     def mouseReleaseEvent(self, e: QMouseEvent):
         if e.button() == Qt.MouseButton.LeftButton:
+            palette = self.palette()
+            palette.setColor(QPalette.ColorRole.Window, QColor(self.defined_color))
+            self.setPalette(palette)
+
             current_widget = self.tab_layout.itemAt(self.tab_layout.count() - 1)
             if current_widget is not None:
                 to_kill = current_widget.widget()
@@ -54,6 +72,15 @@ class Tab(Color):
                     to_kill.hide()
             self.tab_layout.addWidget(self.widget)
             self.widget.show()
+        else:
+            print(self)
+
+    @override
+    def mousePressEvent(self, ev: QMouseEvent) -> None:
+        if ev.button() == Qt.MouseButton.LeftButton:
+            palette = self.palette()
+            palette.setColor(QPalette.ColorRole.Window, QColor("green"))
+            self.setPalette(palette)
 
 
 class OpenGLWindow(QMainWindow):
@@ -64,6 +91,9 @@ class OpenGLWindow(QMainWindow):
 
     opengl_gui: opengl_station.Gui
     osm: OSM
+
+    tabsInternalList : list[Tab] = []
+    activeTab: int = 0
 
     arm_button: QPushButton
     takeoff_button: QPushButton
@@ -106,11 +136,11 @@ class OpenGLWindow(QMainWindow):
         self.halt_button.clicked.connect(lambda: self.button_click(station_server.halt))
 
         mainWidget = QWidget()
-        buttonWidget = QWidget()
+        droneViewWidget = QWidget()
         buttonsWidget = Color("blue")
 
-        tmpTabs = Color("red")
-        tmpTabs.setFixedWidth(75)
+        tmpTabs = Color("purple")
+        tmpTabs.setFixedWidth(125)
 
         self.opengl_gui = opengl_station.Gui()
 
@@ -123,7 +153,7 @@ class OpenGLWindow(QMainWindow):
         self.osm.hide()
 
         mainBox = QHBoxLayout()
-        buttonSplit = QVBoxLayout()
+        droneViewSplit = QVBoxLayout()
         buttons = QHBoxLayout()
         tmpTabsLayout = QVBoxLayout()
 
@@ -131,22 +161,25 @@ class OpenGLWindow(QMainWindow):
         mainBox.setSpacing(0)
         mainBox.setContentsMargins(0, 0, 0, 0)
         mainBox.addWidget(tmpTabs)
-        mainBox.addWidget(buttonWidget)
+        mainBox.addWidget(droneViewWidget)
+
+        self.tabsInternalList.append(Tab("aqua", mainBox, droneViewWidget, "Drone View"))
+        self.tabsInternalList.append(Tab("orange", mainBox, self.osm, "Street View"))
 
         tmpTabs.setLayout(tmpTabsLayout)
         tmpTabsLayout.setSpacing(10)
         tmpTabsLayout.setContentsMargins(10, 10, 10, 10)
-        tmpTabsLayout.addWidget(Tab("blue", mainBox, buttonWidget))
-        tmpTabsLayout.addWidget(Tab("orange", mainBox, self.osm))
+        for tabInstance in self.tabsInternalList:
+            tmpTabsLayout.addWidget(tabInstance)
         tmpTabsLayout.addWidget(QWidget())  # Spacer pushing tabs to top
 
-        buttonWidget.setLayout(buttonSplit)
-        buttonSplit.setSpacing(0)
-        buttonSplit.setContentsMargins(0, 0, 0, 0)
-        buttonSplit.addWidget(buttonsWidget)
-        buttonSplit.setStretch(0, 1)
-        buttonSplit.addWidget(self.opengl_gui)
-        buttonSplit.setStretch(1, 7)
+        droneViewWidget.setLayout(droneViewSplit)
+        droneViewSplit.setSpacing(0)
+        droneViewSplit.setContentsMargins(0, 0, 0, 0)
+        droneViewSplit.addWidget(buttonsWidget)
+        droneViewSplit.setStretch(0, 1)
+        droneViewSplit.addWidget(self.opengl_gui)
+        droneViewSplit.setStretch(1, 7)
 
         buttonsWidget.setLayout(buttons)
         buttons.setSpacing(0)
