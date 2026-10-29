@@ -64,19 +64,9 @@ class Tab(QLabel):
 
     @override
     def mouseReleaseEvent(self, e: QMouseEvent):
-        if e.button() == Qt.MouseButton.LeftButton:
+        if (e.button() == Qt.MouseButton.LeftButton) and (self.hover == True):
 
-            if (self.hover == False):
-            
-                palette = self.palette()
-                palette.setColor(QPalette.ColorRole.Window, QColor(self.defined_color))
-                self.setPalette(palette)
-
-            else:
-
-                palette = self.palette()
-                palette.setColor(QPalette.ColorRole.Window, QColor("light green"))
-                self.setPalette(palette)
+            self.updateFillColor("light green")
 
             current_widget = self.tab_layout.itemAt(self.tab_layout.count() - 1)
             if current_widget is not None:
@@ -87,32 +77,45 @@ class Tab(QLabel):
             self.tab_layout.addWidget(self.widget)
             self.widget.show()
             self.tabSignal.emit(self.tabPos)
-        else:
-            print(self)
 
     @override
     def mousePressEvent(self, ev: QMouseEvent) -> None:
         if ev.button() == Qt.MouseButton.LeftButton:
-            palette = self.palette()
-            palette.setColor(QPalette.ColorRole.Window, QColor("green"))
-            self.setPalette(palette)
+            self.updateFillColor("green")
 
     @override
     def enterEvent(self, event: QEnterEvent) -> None:
         self.hover = True
-        palette = self.palette()
-        palette.setColor(QPalette.ColorRole.Window, QColor("light green"))
-        self.setPalette(palette)
+        self.updateFillColor("light green")
         return super().enterEvent(event)
 
     @override
     def leaveEvent(self, event: QEvent) -> None:
         self.hover = False
-        palette = self.palette()
-        palette.setColor(QPalette.ColorRole.Window, QColor(self.defined_color))
-        self.setPalette(palette)
+        self.updateFillColor(self.defined_color)
         return super().leaveEvent(event)
 
+    # Based on Gemini suggestion
+    # Prevents button being highlighted when mouse is not over box
+    @override
+    def mouseMoveEvent(self, ev: QMouseEvent) -> None:
+        # rect() defines the local bounding box (0, 0, width, height)
+        if not self.rect().contains(ev.pos()):
+            if self.hover:
+                self.hover = False
+                self.updateFillColor(self.defined_color)
+        else:
+            if not self.hover:
+                self.hover = True
+                self.updateFillColor("light green")
+        super().mouseMoveEvent(ev)
+
+    # mfw Gemini reminds you to refactor
+    def updateFillColor(self, color_str: str) -> None:
+
+        palette = self.palette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(color_str))
+        self.setPalette(palette)
 
 
 class OpenGLWindow(QMainWindow):
@@ -324,6 +327,7 @@ class OpenGLWindow(QMainWindow):
         scaled = bounded.mult_point_by_elements(1 / range)
         return scaled * 20
 
+    @Slot(int)
     def highlightActiveTab(self, tabNum: int):
 
         oldTab = self.tabsInternalList[self.activeTab]
