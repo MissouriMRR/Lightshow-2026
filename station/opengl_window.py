@@ -3,8 +3,8 @@ from typing import cast, override
 
 import dronekit
 import opengl_station  # loads opengl_station shared library that the c++ was compiled into
-from PySide6.QtCore import QCoreApplication, QEvent, Qt
-from PySide6.QtGui import QColor, QMouseEvent, QPalette
+from PySide6.QtCore import QCoreApplication, QEvent, Qt, Signal, Slot
+from PySide6.QtGui import QColor, QEnterEvent, QMouseEvent, QPalette
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLayout,
@@ -21,8 +21,6 @@ from station.osm import OSM
 from station.point import Point3d
 from station.station_server import StationServer
 
-from copy import deepcopy
-
 class Color(QWidget):
     def __init__(self, color: str):
         super().__init__()
@@ -37,6 +35,11 @@ class Tab(QLabel):
     tab_layout: QLayout
     widget: QWidget
     defined_color: str
+    tabPos: int
+    baseText: str
+    hover: bool = False
+
+    tabSignal = Signal(int)
 
     def __init__(self, color: str, layout: QLayout, widget: QWidget,
                  tab_text: str):
@@ -53,6 +56,8 @@ class Tab(QLabel):
         self.widget = widget
         self.defined_color = color
 
+        self.baseText = tab_text
+        
         self.setText(tab_text)
 
         self.setFixedHeight(25)
@@ -60,9 +65,18 @@ class Tab(QLabel):
     @override
     def mouseReleaseEvent(self, e: QMouseEvent):
         if e.button() == Qt.MouseButton.LeftButton:
-            palette = self.palette()
-            palette.setColor(QPalette.ColorRole.Window, QColor(self.defined_color))
-            self.setPalette(palette)
+
+            if (self.hover == False):
+            
+                palette = self.palette()
+                palette.setColor(QPalette.ColorRole.Window, QColor(self.defined_color))
+                self.setPalette(palette)
+
+            else:
+
+                palette = self.palette()
+                palette.setColor(QPalette.ColorRole.Window, QColor("light green"))
+                self.setPalette(palette)
 
             current_widget = self.tab_layout.itemAt(self.tab_layout.count() - 1)
             if current_widget is not None:
@@ -72,6 +86,7 @@ class Tab(QLabel):
                     to_kill.hide()
             self.tab_layout.addWidget(self.widget)
             self.widget.show()
+            self.tabSignal.emit(self.tabPos)
         else:
             print(self)
 
@@ -81,6 +96,23 @@ class Tab(QLabel):
             palette = self.palette()
             palette.setColor(QPalette.ColorRole.Window, QColor("green"))
             self.setPalette(palette)
+
+    @override
+    def enterEvent(self, event: QEnterEvent) -> None:
+        self.hover = True
+        palette = self.palette()
+        palette.setColor(QPalette.ColorRole.Window, QColor("light green"))
+        self.setPalette(palette)
+        return super().enterEvent(event)
+
+    @override
+    def leaveEvent(self, event: QEvent) -> None:
+        self.hover = False
+        palette = self.palette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(self.defined_color))
+        self.setPalette(palette)
+        return super().leaveEvent(event)
+
 
 
 class OpenGLWindow(QMainWindow):
@@ -169,8 +201,15 @@ class OpenGLWindow(QMainWindow):
         tmpTabs.setLayout(tmpTabsLayout)
         tmpTabsLayout.setSpacing(10)
         tmpTabsLayout.setContentsMargins(10, 10, 10, 10)
+
+        i : int = 0
         for tabInstance in self.tabsInternalList:
+            if (i == 0):
+                tabInstance.setText("-->"+tabInstance.baseText)
+            tabInstance.tabPos = i
+            tabInstance.tabSignal.connect(self.highlightActiveTab)
             tmpTabsLayout.addWidget(tabInstance)
+            i = i + 1
         tmpTabsLayout.addWidget(QWidget())  # Spacer pushing tabs to top
 
         droneViewWidget.setLayout(droneViewSplit)
@@ -284,3 +323,13 @@ class OpenGLWindow(QMainWindow):
         bounded = position - self.expanse[0]
         scaled = bounded.mult_point_by_elements(1 / range)
         return scaled * 20
+
+    def highlightActiveTab(self, tabNum: int):
+
+        oldTab = self.tabsInternalList[self.activeTab]
+        oldTab.setText(oldTab.baseText)
+
+        self.activeTab = tabNum
+
+        newTab = self.tabsInternalList[self.activeTab]
+        newTab.setText("-->"+newTab.baseText)
