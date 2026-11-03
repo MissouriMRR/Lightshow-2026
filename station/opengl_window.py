@@ -3,7 +3,7 @@ from typing import cast, override
 
 import dronekit
 import opengl_station  # loads opengl_station shared library that the c++ was compiled into
-from PySide6.QtCore import QCoreApplication, QEvent, Qt, Signal, Slot
+from PySide6.QtCore import QCoreApplication, QEvent, Qt, Signal
 from PySide6.QtGui import QColor, QEnterEvent, QMouseEvent, QPalette
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -50,8 +50,6 @@ class Tab(QLabel):
         palette.setColor(QPalette.ColorRole.Window, QColor(color))
         self.setPalette(palette)
 
-        print(type(self.tabSignal))
-
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.tab_layout = layout
@@ -65,8 +63,8 @@ class Tab(QLabel):
         self.setFixedHeight(25)
 
     @override
-    def mouseReleaseEvent(self, e: QMouseEvent):
-        if (e.button() == Qt.MouseButton.LeftButton) and (self.hover == True):
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        if (event.button() == Qt.MouseButton.LeftButton) and (self.hover == True):
             self.updateFillColor("light green")
 
             current_widget = self.tab_layout.itemAt(self.tab_layout.count() - 1)
@@ -80,8 +78,8 @@ class Tab(QLabel):
             self.tabSignal.emit(self.tabPos)
 
     @override
-    def mousePressEvent(self, ev: QMouseEvent) -> None:
-        if ev.button() == Qt.MouseButton.LeftButton:
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.updateFillColor("green")
 
     @override
@@ -99,9 +97,8 @@ class Tab(QLabel):
     # Based on Gemini suggestion
     # Prevents button being highlighted when mouse is not over box
     @override
-    def mouseMoveEvent(self, ev: QMouseEvent) -> None:
-        # rect() defines the local bounding box (0, 0, width, height)
-        if not self.rect().contains(ev.pos()):
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        if not self.rect().contains(event.pos()):
             if self.hover:
                 self.hover = False
                 self.updateFillColor(self.defined_color)
@@ -109,7 +106,7 @@ class Tab(QLabel):
             if not self.hover:
                 self.hover = True
                 self.updateFillColor("light green")
-        super().mouseMoveEvent(ev)
+        super().mouseMoveEvent(event)
 
     # mfw Gemini reminds you to refactor
     def updateFillColor(self, color_str: str) -> None:
@@ -332,7 +329,6 @@ class OpenGLWindow(QMainWindow):
         scaled = bounded.mult_point_by_elements(1 / range)
         return scaled * 20
 
-    @Slot(int)
     def highlightActiveTab(self, tabNum: int):
 
         oldTab = self.tabsInternalList[self.activeTab]
