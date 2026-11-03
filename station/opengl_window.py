@@ -7,12 +7,12 @@ from PySide6.QtCore import QCoreApplication, QEvent, Qt, Signal, Slot
 from PySide6.QtGui import QColor, QEnterEvent, QMouseEvent, QPalette
 from PySide6.QtWidgets import (
     QHBoxLayout,
+    QLabel,
     QLayout,
     QMainWindow,
     QPushButton,
     QVBoxLayout,
     QWidget,
-    QLabel
 )
 
 from common.utils import loc_to_point
@@ -20,6 +20,7 @@ from station.events import ArmEvent, DroneConnectEvent, DronePositionEvent
 from station.osm import OSM
 from station.point import Point3d
 from station.station_server import StationServer
+
 
 class Color(QWidget):
     def __init__(self, color: str):
@@ -35,20 +36,21 @@ class Tab(QLabel):
     tab_layout: QLayout
     widget: QWidget
     defined_color: str
-    tabPos: int
+    tabPos: int = 0
     baseText: str
     hover: bool = False
 
-    tabSignal = Signal(int)
+    tabSignal: Signal = Signal(int)
 
-    def __init__(self, color: str, layout: QLayout, widget: QWidget,
-                 tab_text: str):
+    def __init__(self, color: str, layout: QLayout, widget: QWidget, tab_text: str):
         super().__init__(color)
 
         self.setAutoFillBackground(True)
         palette = self.palette()
         palette.setColor(QPalette.ColorRole.Window, QColor(color))
         self.setPalette(palette)
+
+        print(type(self.tabSignal))
 
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -57,7 +59,7 @@ class Tab(QLabel):
         self.defined_color = color
 
         self.baseText = tab_text
-        
+
         self.setText(tab_text)
 
         self.setFixedHeight(25)
@@ -65,7 +67,6 @@ class Tab(QLabel):
     @override
     def mouseReleaseEvent(self, e: QMouseEvent):
         if (e.button() == Qt.MouseButton.LeftButton) and (self.hover == True):
-
             self.updateFillColor("light green")
 
             current_widget = self.tab_layout.itemAt(self.tab_layout.count() - 1)
@@ -127,7 +128,7 @@ class OpenGLWindow(QMainWindow):
     opengl_gui: opengl_station.Gui
     osm: OSM
 
-    tabsInternalList : list[Tab] = []
+    tabsInternalList: list[Tab]
     activeTab: int = 0
 
     arm_button: QPushButton
@@ -146,6 +147,8 @@ class OpenGLWindow(QMainWindow):
         station_server.set_drone_listeners(
             self.drone_connect_listener, self.arm_listener, self.drone_position_listener
         )
+
+        self.tabsInternalList = []
 
         # force minimum y to be 0
         self.expanse = self.calc_expanse()
@@ -198,17 +201,19 @@ class OpenGLWindow(QMainWindow):
         mainBox.addWidget(tmpTabs)
         mainBox.addWidget(droneViewWidget)
 
-        self.tabsInternalList.append(Tab("aqua", mainBox, droneViewWidget, "Drone View"))
+        self.tabsInternalList.append(
+            Tab("aqua", mainBox, droneViewWidget, "Drone View")
+        )
         self.tabsInternalList.append(Tab("orange", mainBox, self.osm, "Street View"))
 
         tmpTabs.setLayout(tmpTabsLayout)
         tmpTabsLayout.setSpacing(10)
         tmpTabsLayout.setContentsMargins(10, 10, 10, 10)
 
-        i : int = 0
+        i: int = 0
         for tabInstance in self.tabsInternalList:
-            if (i == 0):
-                tabInstance.setText("-->"+tabInstance.baseText)
+            if i == 0:
+                tabInstance.setText("-->" + tabInstance.baseText)
             tabInstance.tabPos = i
             tabInstance.tabSignal.connect(self.highlightActiveTab)
             tmpTabsLayout.addWidget(tabInstance)
@@ -336,4 +341,4 @@ class OpenGLWindow(QMainWindow):
         self.activeTab = tabNum
 
         newTab = self.tabsInternalList[self.activeTab]
-        newTab.setText("-->"+newTab.baseText)
+        newTab.setText("-->" + newTab.baseText)
