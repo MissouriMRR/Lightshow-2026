@@ -32,7 +32,7 @@ class Overlay(QWidget):
         self.points = points
 
     @override
-    def paintEvent(self, paint_event: QPaintEvent) -> None:
+    def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setBrush(Qt.BrushStyle.SolidPattern)
         painter.setBrush(Qt.GlobalColor.red)
@@ -104,21 +104,21 @@ class OSM(QQuickWidget):
         )
 
     @override
-    def mousePressEvent(self, e: QMouseEvent) -> None:
-        if e.button() == Qt.MouseButton.RightButton:
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.RightButton:
             self.mouse_down = True
             QGuiApplication.setOverrideCursor(Qt.CursorShape.OpenHandCursor)
 
     @override
-    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
-        if e.button() == Qt.MouseButton.RightButton:
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.RightButton:
             self.mouse_down = False
             QGuiApplication.restoreOverrideCursor()
 
     @override
-    def mouseMoveEvent(self, e: QMouseEvent) -> None:
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if self.mouse_down:
-            delta = QPointF(e.x(), e.y()) - self.last
+            delta = QPointF(event.x(), event.y()) - self.last
             delta.setX(-delta.x() * self.getSize().x() / self.width())
             delta.setY(delta.y() * self.getSize().y() / self.height())
 
@@ -140,7 +140,7 @@ class OSM(QQuickWidget):
                     QGeoCoordinate(panned.latitude(), -current.longitude() + delta.x()),
                 )
 
-        self.last = QPoint(e.x(), e.y())
+        self.last = QPoint(event.x(), event.y())
 
     @override
     def paintEvent(self, event: QPaintEvent) -> None:
@@ -149,19 +149,19 @@ class OSM(QQuickWidget):
         super().paintEvent(event)
 
     @override
-    def resizeEvent(self, e: QResizeEvent) -> None:
-        super().resizeEvent(e)
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        super().resizeEvent(event)
         self.overlay.setGeometry(self.rect())
         self.overlay.raise_()
 
     @override
-    def event(self, e: QEvent) -> bool:
-        if e.type() == DronePositionEvent.event_number:
-            pos_event = cast(DronePositionEvent, e)
+    def event(self, event: QEvent) -> bool:
+        if event.type() == DronePositionEvent.event_number:
+            pos_event = cast(DronePositionEvent, event)
             self.drone_points[pos_event.id] = QGeoCoordinate(
                 pos_event.position.lat, pos_event.position.lon
             )
             self.update()
             return False
 
-        return super().event(e)
+        return super().event(event)
