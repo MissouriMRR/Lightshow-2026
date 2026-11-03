@@ -3,10 +3,11 @@ from typing import cast, override
 
 import dronekit
 import opengl_station  # loads opengl_station shared library that the c++ was compiled into
-from PySide6.QtCore import QCoreApplication, QEvent
-from PySide6.QtGui import QColor, QPalette
+from PySide6.QtCore import QCoreApplication, QEvent, Qt
+from PySide6.QtGui import QColor, QMouseEvent, QPalette
 from PySide6.QtWidgets import (
     QHBoxLayout,
+    QLayout,
     QMainWindow,
     QPushButton,
     QVBoxLayout,
@@ -14,39 +15,45 @@ from PySide6.QtWidgets import (
 )
 
 from common.utils import loc_to_point
+from station.events import ArmEvent, DroneConnectEvent, DronePositionEvent
+from station.osm import OSM
 from station.point import Point3d
 from station.station_server import StationServer
 
 
-class ArmEvent(QEvent):
-    armed: bool
-    id: int
-    event_number: int = QEvent.registerEventType()
+class Color(QWidget):
+    def __init__(self, color: str):
+        super().__init__()
 
-    def __init__(self, id: int, armed: bool):
-        super().__init__(QEvent.Type(self.event_number))
-        self.armed = armed
-        self.id = id
-
-
-class DronePositionEvent(QEvent):
-    position: dronekit.LocationGlobalRelative
-    event_number: int = QEvent.registerEventType()
-    id: int
-
-    def __init__(self, id: int, position: dronekit.LocationGlobalRelative):
-        super().__init__(QEvent.Type(self.event_number))
-        self.position = position
-        self.id = id
+        self.setAutoFillBackground(True)
+        palette = self.palette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(color))
+        self.setPalette(palette)
 
 
-class DroneConnectEvent(QEvent):
-    event_number: int = QEvent.registerEventType()
-    id: int
+class Tab(Color):
+    tab_layout: QLayout
+    widget: QWidget
 
-    def __init__(self, id: int):
-        super().__init__(QEvent.Type(self.event_number))
-        self.id = id
+    def __init__(self, color: str, layout: QLayout, widget: QWidget):
+        super().__init__(color)
+
+        self.tab_layout = layout
+        self.widget = widget
+
+        self.setFixedHeight(55)
+
+    @override
+    def mouseReleaseEvent(self, e: QMouseEvent):
+        if e.button() == Qt.MouseButton.LeftButton:
+            current_widget = self.tab_layout.itemAt(self.tab_layout.count() - 1)
+            if current_widget is not None:
+                to_kill = current_widget.widget()
+                if to_kill is not None:
+                    self.tab_layout.removeWidget(to_kill)
+                    to_kill.hide()
+            self.tab_layout.addWidget(self.widget)
+            self.widget.show()
 
 
 class OpenGLWindow(QMainWindow):
@@ -56,6 +63,7 @@ class OpenGLWindow(QMainWindow):
     expanse: tuple[Point3d, Point3d]
 
     opengl_gui: opengl_station.Gui
+    osm: OSM
 
     arm_button: QPushButton
     takeoff_button: QPushButton
@@ -97,32 +105,40 @@ class OpenGLWindow(QMainWindow):
         self.halt_button = QPushButton("halt")
         self.halt_button.clicked.connect(lambda: self.button_click(station_server.halt))
 
-        class Color(QWidget):
-            def __init__(self, color: str):
-                super().__init__()
-
-                self.setAutoFillBackground(True)
-                palette = self.palette()
-                palette.setColor(QPalette.ColorRole.Window, QColor(color))
-                self.setPalette(palette)
-
         mainWidget = QWidget()
         buttonWidget = QWidget()
         buttonsWidget = Color("blue")
 
         tmpTabs = Color("red")
         tmpTabs.setFixedWidth(75)
+
         self.opengl_gui = opengl_station.Gui()
+
+        start_frame = self.station_server.config.get_frame_coordinates("1", "frame 1")
+        if start_frame is not None:
+            self.osm = OSM(start_frame)
+        else:
+            print("Initial frame not found")
+            self.osm = OSM([0, 0])
+        self.osm.hide()
 
         mainBox = QHBoxLayout()
         buttonSplit = QVBoxLayout()
         buttons = QHBoxLayout()
+        tmpTabsLayout = QVBoxLayout()
 
         mainWidget.setLayout(mainBox)
         mainBox.setSpacing(0)
         mainBox.setContentsMargins(0, 0, 0, 0)
         mainBox.addWidget(tmpTabs)
         mainBox.addWidget(buttonWidget)
+
+        tmpTabs.setLayout(tmpTabsLayout)
+        tmpTabsLayout.setSpacing(10)
+        tmpTabsLayout.setContentsMargins(10, 10, 10, 10)
+        tmpTabsLayout.addWidget(Tab("blue", mainBox, buttonWidget))
+        tmpTabsLayout.addWidget(Tab("orange", mainBox, self.osm))
+        tmpTabsLayout.addWidget(QWidget())  # Spacer pushing tabs to top
 
         buttonWidget.setLayout(buttonSplit)
         buttonSplit.setSpacing(0)
@@ -175,6 +191,7 @@ class OpenGLWindow(QMainWindow):
                 event = cast(DronePositionEvent, event)
                 placed = self.place_in_expanse(loc_to_point(event.position))
                 self.opengl_gui.setPos(int(event.id), placed.x, placed.y, placed.z)
+                return False
 
             case opengl_station.GuiReadyEvent.event_number:
                 # add drones to opengl widget
@@ -205,6 +222,9 @@ class OpenGLWindow(QMainWindow):
     ):
         """Listens for drone position changes to update opengl window"""
         QCoreApplication.sendEvent(self, DronePositionEvent(int(drone_id), position))
+        QCoreApplication.sendEvent(
+            self.osm, DronePositionEvent(int(drone_id), position)
+        )
 
     def calc_expanse(self) -> tuple[Point3d, Point3d]:
         """Calculates the minimum and maximum positions which the drones will take"""
