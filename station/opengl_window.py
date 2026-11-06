@@ -2,11 +2,11 @@ from collections.abc import Callable
 from math import copysign
 from typing import cast, override
 
-from PySide6.QtPositioning import QGeoCoordinate
 import dronekit
 import opengl_station  # loads opengl_station shared library that the c++ was compiled into
 from PySide6.QtCore import QCoreApplication, QEvent, Qt, Signal
 from PySide6.QtGui import QColor, QEnterEvent, QMouseEvent, QPalette
+from PySide6.QtPositioning import QGeoCoordinate
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -301,10 +301,6 @@ class OpenGLWindow(QMainWindow):
 
     def point_to_meters(self, point: Point3d) -> Point3d:
         center = QGeoCoordinate(self.start_frame[0], self.start_frame[1])
-
-        print(
-            QGeoCoordinate(self.start_frame[0], point.z).distanceTo(center)
-            * copysign(1, point.y - self.start_frame[1]))
 
         return Point3d(
             QGeoCoordinate(point.x, self.start_frame[1]).distanceTo(center)
