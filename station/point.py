@@ -20,11 +20,17 @@ class Point3d:
     def __add__(self, b: Point3d) -> Point3d:
         return Point3d(self.x + b.x, self.y + b.y, self.z + b.z)
 
+    def __radd__(self, b: Point3d) -> Point3d:
+        return self.__add__(b)
+
     def __mul__(self, a: float) -> Point3d:
         return Point3d(self.x * a, self.y * a, self.z * a)
 
     def __rtruediv__(self, a: float) -> Point3d:
         return Point3d(a / self.x, a / self.y, a / self.z)
+
+    def __truediv__(self, a: float) -> Point3d:
+        return Point3d(self.x / a, self.y / a, self.z / a)
 
     def __iter__(self) -> Iterator[float]:
         yield self.x

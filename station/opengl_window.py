@@ -1,10 +1,11 @@
-from collections.abc import Callable, Iterable
+from math import copysign
 from typing import cast, override
 
 import dronekit
 import opengl_station  # loads opengl_station shared library that the c++ was compiled into
 from PySide6.QtCore import QCoreApplication, QEvent, Qt, Signal
 from PySide6.QtGui import QColor, QEnterEvent, QMouseEvent, QPalette
+from PySide6.QtPositioning import QGeoCoordinate
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -15,7 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from common.utils import loc_to_point
+from common.utils import loc_to_point, point_to_list
 from station.events import ArmEvent, DroneConnectEvent, DronePositionEvent
 from station.osm import OSM
 from station.point import Point3d
@@ -120,7 +121,9 @@ class OpenGLWindow(QMainWindow):
     """Handles running and communication of the opengl window"""
 
     station_server: StationServer
-    expanse: tuple[Point3d, Point3d]
+    furthest_distance: float
+
+    start_frame: list[float]
 
     opengl_gui: opengl_station.Gui
     osm: OSM
@@ -147,28 +150,20 @@ class OpenGLWindow(QMainWindow):
 
         self.tabsInternalList = []
 
-        # force minimum y to be 0
-        self.expanse = self.calc_expanse()
-        tmp = self.expanse[0]
-        tmp.y = 0
-        self.expanse = (tmp, self.expanse[1])
-
         self.arm_button = QPushButton("arm")
-        self.arm_button.clicked.connect(lambda: self.button_click(station_server.arm))
+        self.arm_button.clicked.connect(station_server.arm)
 
         self.takeoff_button = QPushButton("takeoff")
-        self.takeoff_button.clicked.connect(
-            lambda: self.button_click(station_server.takeoff)
-        )
+        self.takeoff_button.clicked.connect(station_server.takeoff)
 
         self.step_button = QPushButton("step")
-        self.step_button.clicked.connect(lambda: self.button_click(station_server.step))
+        self.step_button.clicked.connect(station_server.step)
 
         self.land_button = QPushButton("land")
-        self.land_button.clicked.connect(lambda: self.button_click(station_server.land))
+        self.land_button.clicked.connect(station_server.land)
 
         self.halt_button = QPushButton("halt")
-        self.halt_button.clicked.connect(lambda: self.button_click(station_server.halt))
+        self.halt_button.clicked.connect(station_server.halt)
 
         mainWidget = QWidget()
         droneViewWidget = QWidget()
@@ -179,13 +174,11 @@ class OpenGLWindow(QMainWindow):
 
         self.opengl_gui = opengl_station.Gui()
 
-        start_frame = self.station_server.config.get_frame_coordinates("1", "frame 1")
-        if start_frame is not None:
-            self.osm = OSM(start_frame)
-        else:
-            print("Initial frame not found")
-            self.osm = OSM([0, 0])
+        self.start_frame = self.calc_center()
+        self.osm = OSM(self.start_frame)
         self.osm.hide()
+
+        self.furthest_distance = self.calc_furthest_distance()
 
         mainBox = QHBoxLayout()
         droneViewSplit = QVBoxLayout()
@@ -283,9 +276,6 @@ class OpenGLWindow(QMainWindow):
 
         return True
 
-    def button_click(self, function: Callable[[], None]):
-        function()
-
     def drone_connect_listener(self, drone_id: str):
         """Listens for drone connection to update opengl window"""
         QCoreApplication.sendEvent(self, DroneConnectEvent(int(drone_id)))
@@ -303,30 +293,37 @@ class OpenGLWindow(QMainWindow):
             self.osm, DronePositionEvent(int(drone_id), position)
         )
 
-    def calc_expanse(self) -> tuple[Point3d, Point3d]:
-        """Calculates the minimum and maximum positions which the drones will take"""
+    def point_to_meters(self, point: Point3d) -> Point3d:
+        center = QGeoCoordinate(self.start_frame[0], self.start_frame[1])
+
+        return Point3d(
+            QGeoCoordinate(point.x, self.start_frame[1]).distanceTo(center)
+            * copysign(1, point.x - self.start_frame[0]),
+            point.y,
+            QGeoCoordinate(self.start_frame[0], point.z).distanceTo(center)
+            * copysign(1, point.z - self.start_frame[1]),
+        )
+
+    def calc_furthest_distance(self) -> float:
+        """Calculates the maximum distance from center that the drones will achieve"""
 
         combined = [
-            loc_to_point(loc) for frame in self.station_server.frames for loc in frame
+            self.point_to_meters(loc_to_point(loc))
+            for frame in self.station_server.frames
+            for loc in frame
         ]
 
-        def edge_rel(predicate: Callable[[Iterable[float]], float]) -> Point3d:
-            def edge_it(pull: Callable[[Point3d], float]) -> float:
-                return predicate(pull(point) for point in combined)
-
-            return Point3d(
-                edge_it(lambda p: p.x), edge_it(lambda p: p.y), edge_it(lambda p: p.z)
-            )
-
-        return (edge_rel(min), edge_rel(max))
+        return max(
+            max([x.x for x in combined]),
+            max([x.y for x in combined]),
+            max([x.z for x in combined]),
+        )
 
     def place_in_expanse(self, position: Point3d) -> Point3d:
         """Scales drone positions over precalculated expanse"""
 
-        range = self.expanse[1] - self.expanse[0]
-        range = range.apply_over_elements(lambda num: 1 if num < 0.0001 else num)
-        bounded = position - self.expanse[0]
-        scaled = bounded.mult_point_by_elements(1 / range)
+        footed = self.point_to_meters(position)
+        scaled = footed / self.furthest_distance
         return scaled * 20
 
     def highlightActiveTab(self, tabNum: int):
@@ -338,3 +335,10 @@ class OpenGLWindow(QMainWindow):
 
         newTab = self.tabsInternalList[self.activeTab]
         newTab.setText("-->" + newTab.baseText)
+
+    def calc_center(self) -> list[float]:
+        combined = [
+            loc_to_point(loc) for frame in self.station_server.frames for loc in frame
+        ]
+
+        return point_to_list(sum(combined, start=Point3d(0, 0, 0)) / len(combined))
