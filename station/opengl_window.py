@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from math import copysign
 from typing import cast, override
 
@@ -152,21 +151,19 @@ class OpenGLWindow(QMainWindow):
         self.tabsInternalList = []
 
         self.arm_button = QPushButton("arm")
-        self.arm_button.clicked.connect(lambda: self.button_click(station_server.arm))
+        self.arm_button.clicked.connect(station_server.arm)
 
         self.takeoff_button = QPushButton("takeoff")
-        self.takeoff_button.clicked.connect(
-            lambda: self.button_click(station_server.takeoff)
-        )
+        self.takeoff_button.clicked.connect(station_server.takeoff)
 
         self.step_button = QPushButton("step")
-        self.step_button.clicked.connect(lambda: self.button_click(station_server.step))
+        self.step_button.clicked.connect(station_server.step)
 
         self.land_button = QPushButton("land")
-        self.land_button.clicked.connect(lambda: self.button_click(station_server.land))
+        self.land_button.clicked.connect(station_server.land)
 
         self.halt_button = QPushButton("halt")
-        self.halt_button.clicked.connect(lambda: self.button_click(station_server.halt))
+        self.halt_button.clicked.connect(station_server.halt)
 
         mainWidget = QWidget()
         droneViewWidget = QWidget()
@@ -278,9 +275,6 @@ class OpenGLWindow(QMainWindow):
                 return super().event(event)
 
         return True
-
-    def button_click(self, function: Callable[[], None]):
-        function()
 
     def drone_connect_listener(self, drone_id: str):
         """Listens for drone connection to update opengl window"""
