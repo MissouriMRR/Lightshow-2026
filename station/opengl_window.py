@@ -1,4 +1,4 @@
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from typing import cast, override
 
 from PySide6.QtPositioning import QGeoCoordinate
@@ -21,9 +21,6 @@ from station.events import ArmEvent, DroneConnectEvent, DronePositionEvent
 from station.osm import OSM
 from station.point import Point3d
 from station.station_server import StationServer
-
-
-METERS_TO_FEET = 3.82084
 
 
 class Color(QWidget):
@@ -301,22 +298,20 @@ class OpenGLWindow(QMainWindow):
             self.osm, DronePositionEvent(int(drone_id), position)
         )
 
-    def point_to_feet(self, point: Point3d) -> Point3d:
+    def point_to_meters(self, point: Point3d) -> Point3d:
         center = QGeoCoordinate(self.start_frame[0], self.start_frame[1])
 
         return Point3d(
-            QGeoCoordinate(point.x, self.start_frame[1]).distanceTo(center)
-            * METERS_TO_FEET,
+            QGeoCoordinate(point.x, self.start_frame[1]).distanceTo(center),
             point.y,
-            QGeoCoordinate(self.start_frame[0], point.z).distanceTo(center)
-            * METERS_TO_FEET,
+            QGeoCoordinate(self.start_frame[0], point.z).distanceTo(center),
         )
 
     def calc_furthest_distance(self) -> float:
         """Calculates the maximum distance from center that the drones will achieve"""
 
         combined = [
-            self.point_to_feet(loc_to_point(loc))
+            self.point_to_meters(loc_to_point(loc))
             for frame in self.station_server.frames
             for loc in frame
         ]
@@ -330,7 +325,7 @@ class OpenGLWindow(QMainWindow):
     def place_in_expanse(self, position: Point3d) -> Point3d:
         """Scales drone positions over precalculated expanse"""
 
-        footed = self.point_to_feet(position)
+        footed = self.point_to_meters(position)
         scaled = footed / self.furthest_distance
         return scaled * 20
 
