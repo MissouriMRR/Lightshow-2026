@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from math import copysign
 from typing import cast, override
 
 from PySide6.QtPositioning import QGeoCoordinate
@@ -302,9 +303,11 @@ class OpenGLWindow(QMainWindow):
         center = QGeoCoordinate(self.start_frame[0], self.start_frame[1])
 
         return Point3d(
-            QGeoCoordinate(point.x, self.start_frame[1]).distanceTo(center),
+            QGeoCoordinate(point.x, self.start_frame[1]).distanceTo(center)
+            * copysign(1, point.x - self.start_frame[0]),
             point.y,
-            QGeoCoordinate(self.start_frame[0], point.z).distanceTo(center),
+            QGeoCoordinate(self.start_frame[0], point.z).distanceTo(center)
+            * copysign(1, point.y - self.start_frame[1]),
         )
 
     def calc_furthest_distance(self) -> float:
