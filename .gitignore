@@ -135,9 +135,6 @@ dmypy.json
 # Ruff
 .ruff_cache/
 
-# Spreadsheets
-*.csv
-
 # Images
 images/*
 vision_images/
@@ -179,4 +176,3 @@ vision/mapping/results/*
 # Ignore the QT installation
 
 /6*
-
