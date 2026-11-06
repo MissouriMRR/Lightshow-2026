@@ -302,12 +302,16 @@ class OpenGLWindow(QMainWindow):
     def point_to_meters(self, point: Point3d) -> Point3d:
         center = QGeoCoordinate(self.start_frame[0], self.start_frame[1])
 
+        print(
+            QGeoCoordinate(self.start_frame[0], point.z).distanceTo(center)
+            * copysign(1, point.y - self.start_frame[1]))
+
         return Point3d(
             QGeoCoordinate(point.x, self.start_frame[1]).distanceTo(center)
             * copysign(1, point.x - self.start_frame[0]),
             point.y,
             QGeoCoordinate(self.start_frame[0], point.z).distanceTo(center)
-            * copysign(1, point.y - self.start_frame[1]),
+            * copysign(1, point.z - self.start_frame[1]),
         )
 
     def calc_furthest_distance(self) -> float:
