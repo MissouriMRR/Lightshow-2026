@@ -2,6 +2,11 @@ import dronekit
 
 
 class DroneState:
+    # Prearm checks
+    # VerticalSpeed
+    # Battery
+    # State?
+
     pos: dronekit.LocationGlobalRelative
     state: dronekit.SystemStatus
     armed: bool
