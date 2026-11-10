@@ -16,7 +16,7 @@ class DisconnectedDroneDisp(tkinter.Frame):
         self.connected_drones = []
 
         self.station_server = station_server
-        station_server.set_drone_listeners(self.on_drone, self.on_arm, None)
+        station_server.set_drone_listeners(self.on_drone, self.on_arm, None, None)
         self.desired_drones = station_server.config.get_drone_ids()[1:]
 
         # height as a really large number because expand doesn't seem to work for some reason

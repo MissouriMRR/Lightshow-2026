@@ -294,6 +294,15 @@ class ConfigParser:
         lat, lon, alt = coords
         return dronekit.LocationGlobalRelative(lat, lon, alt)
 
+    def get_frame_color(
+        self, drone_id: str, frame_name: str
+    ) -> tuple[int, int, int] | None:
+        frame = self.config_data.get("show", {}).get(drone_id, {}).get(frame_name)
+        if frame is None:
+            logging.warning("Frame %s not found for drone %s", frame_name, drone_id)
+            return None
+        return frame.get("color")
+
     # ============ Local Info Access ============
 
     def get_self_id(self) -> str | None:

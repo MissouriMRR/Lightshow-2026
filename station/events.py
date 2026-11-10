@@ -31,3 +31,20 @@ class DroneConnectEvent(QEvent):
     def __init__(self, id: int):
         super().__init__(QEvent.Type(self.event_number))
         self.id = id
+
+
+class DroneColorEvent(QEvent):
+    event_number: int = QEvent.registerEventType()
+    id: int
+    r: float
+    g: float
+    b: float
+    a: float
+
+    def __init__(self, id: int, r: float, g: float, b: float, a: float):
+        super().__init__(QEvent.Type(self.event_number))
+        self.id = id
+        self.r = r
+        self.g = g
+        self.b = b
+        self.a = a
