@@ -22,6 +22,6 @@ Item {
         anchors.fill: parent
         plugin: mapPlugin
         center: QtPositioning.coordinate(40.7128, -74.0060) // New York City
-        zoomLevel: 14
+        zoomLevel: 16
     }
 }

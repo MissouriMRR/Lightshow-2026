@@ -37,6 +37,7 @@ class StationServer:
     drone_connect_listener: Callable[[str], None]
     arm_listener: Callable[[str, bool], None]
     drone_position_listener: Callable[[str, dronekit.LocationGlobalRelative], None]
+    drone_color_listener: Callable[[str, int, int, int], None]
 
     @property
     def armed(self) -> bool:
@@ -82,6 +83,7 @@ class StationServer:
         self.drone_connect_listener = lambda _drone_id: None
         self.arm_listener = lambda _drone_id, _armed: None
         self.drone_position_listener = lambda _drone_id, _position: None
+        self.drone_color_listener = lambda _drone_id, _r, _g, _b: None
 
     async def run(self) -> None:
         await asyncio.gather(self.initial_connect(), self.process_messages())
@@ -116,6 +118,7 @@ class StationServer:
         arm_listener: Callable[[str, bool], None] | None,
         drone_position_listener: Callable[[str, dronekit.LocationGlobalRelative], None]
         | None,
+        drone_color_listener: Callable[[str, int, int, int], None] | None,
     ) -> None:
         if drone_connect_listener != None:
             self.drone_connect_listener = drone_connect_listener
@@ -123,6 +126,8 @@ class StationServer:
             self.arm_listener = arm_listener
         if drone_position_listener != None:
             self.drone_position_listener = drone_position_listener
+        if drone_color_listener != None:
+            self.drone_color_listener = drone_color_listener
 
     def set_drone_position_listener(
         self,
@@ -154,17 +159,11 @@ class StationServer:
     def get_frame(self, num: int) -> list[dronekit.LocationGlobalRelative]:
         return self.frames[num]
 
-    def current_frame(self) -> list[dronekit.LocationGlobalRelative]:
-        return self.get_frame(self.show_index)
-
     def get_drone_positions(self) -> list[dronekit.LocationGlobalRelative]:
         return [drone.pos for drone in self.drones.values()]
 
     def get_drone_confirmeds(self) -> list[bool]:
         return [drone.confirmed for drone in self.drones.values()]
-
-    def set_show_index(self, show_index: int) -> None:
-        self.show_index = show_index
 
     async def dearm(self) -> None:
         dearmeds: list[Awaitable[object]] = []
@@ -215,12 +214,10 @@ class StationServer:
         lift_order.sort(key=lambda pair: -pair[1].alt)
         for drone_id, _ in lift_order:
             self.drones[drone_id].confirmed = False
-            # self.drone_position_listener(drone_id)
             await self.connection.send_takeoff(drone_id)
             self.drones[drone_id].confirmed = True
             self.drones[drone_id].frame = 0
             await self.connection.send_poll(drone_id)
-            # self.drone_position_listener()
 
     def step(self) -> None:
         self.current_message = Message.STEP
@@ -236,12 +233,17 @@ class StationServer:
 
             async def send(drone_id: str) -> None:
                 self.drones[drone_id].confirmed = False
-                # self.drone_position_listener()
                 await self.connection.send_step(drone_id)
+
+                color = self.config.get_frame_color(
+                    drone_id, "frame " + str(self.show_index)
+                )
+                if color is not None:
+                    self.drone_color_listener(drone_id, *color)
+
                 self.drones[drone_id].confirmed = True
                 self.drones[drone_id].frame = self.show_index
                 await self.connection.send_poll(drone_id)
-                # self.drone_position_listener()
 
             self.show_index += 1
             await asyncio.gather(*[send(d) for d in self.drones])

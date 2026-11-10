@@ -17,7 +17,12 @@ from PySide6.QtWidgets import (
 )
 
 from common.utils import loc_to_point, point_to_list
-from station.events import ArmEvent, DroneConnectEvent, DronePositionEvent
+from station.events import (
+    ArmEvent,
+    DroneColorEvent,
+    DroneConnectEvent,
+    DronePositionEvent,
+)
 from station.osm import OSM
 from station.point import Point3d
 from station.station_server import StationServer
@@ -145,7 +150,10 @@ class OpenGLWindow(QMainWindow):
 
         self.station_server = station_server
         station_server.set_drone_listeners(
-            self.drone_connect_listener, self.arm_listener, self.drone_position_listener
+            self.drone_connect_listener,
+            self.arm_listener,
+            self.drone_position_listener,
+            self.drone_color_listener,
         )
 
         self.tabsInternalList = []
@@ -169,8 +177,8 @@ class OpenGLWindow(QMainWindow):
         droneViewWidget = QWidget()
         buttonsWidget = Color("blue")
 
-        tmpTabs = Color("purple")
-        tmpTabs.setFixedWidth(125)
+        tabsHolder = Color("grey")
+        tabsHolder.setFixedWidth(125)
 
         self.opengl_gui = opengl_station.Gui()
 
@@ -183,12 +191,12 @@ class OpenGLWindow(QMainWindow):
         mainBox = QHBoxLayout()
         droneViewSplit = QVBoxLayout()
         buttons = QHBoxLayout()
-        tmpTabsLayout = QVBoxLayout()
+        tabsHolderLayout = QVBoxLayout()
 
         mainWidget.setLayout(mainBox)
         mainBox.setSpacing(0)
         mainBox.setContentsMargins(0, 0, 0, 0)
-        mainBox.addWidget(tmpTabs)
+        mainBox.addWidget(tabsHolder)
         mainBox.addWidget(droneViewWidget)
 
         self.tabsInternalList.append(
@@ -196,9 +204,9 @@ class OpenGLWindow(QMainWindow):
         )
         self.tabsInternalList.append(Tab("orange", mainBox, self.osm, "Street View"))
 
-        tmpTabs.setLayout(tmpTabsLayout)
-        tmpTabsLayout.setSpacing(10)
-        tmpTabsLayout.setContentsMargins(10, 10, 10, 10)
+        tabsHolder.setLayout(tabsHolderLayout)
+        tabsHolderLayout.setSpacing(10)
+        tabsHolderLayout.setContentsMargins(10, 10, 10, 10)
 
         i: int = 0
         for tabInstance in self.tabsInternalList:
@@ -206,9 +214,9 @@ class OpenGLWindow(QMainWindow):
                 tabInstance.setText("-->" + tabInstance.baseText)
             tabInstance.tabPos = i
             tabInstance.tabSignal.connect(self.highlightActiveTab)
-            tmpTabsLayout.addWidget(tabInstance)
+            tabsHolderLayout.addWidget(tabInstance)
             i = i + 1
-        tmpTabsLayout.addWidget(QWidget())  # Spacer pushing tabs to top
+        tabsHolderLayout.addWidget(QWidget())  # Spacer pushing tabs to top
 
         droneViewWidget.setLayout(droneViewSplit)
         droneViewSplit.setSpacing(0)
@@ -263,6 +271,12 @@ class OpenGLWindow(QMainWindow):
                 self.opengl_gui.setPos(int(event.id), placed.x, placed.y, placed.z)
                 return False
 
+            case DroneColorEvent.event_number:
+                event = cast(DroneColorEvent, event)
+                self.opengl_gui.setColor(
+                    int(event.id), event.r, event.g, event.b, event.a
+                )
+
             case opengl_station.GuiReadyEvent.event_number:
                 # add drones to opengl widget
                 config = self.station_server.config
@@ -271,6 +285,7 @@ class OpenGLWindow(QMainWindow):
                         int(id),
                         f"{config.get_drone_ip(id)}:{config.get_drone_port(id)}",
                     )
+
             case _:
                 return super().event(event)
 
@@ -288,10 +303,16 @@ class OpenGLWindow(QMainWindow):
         self, drone_id: str, position: dronekit.LocationGlobalRelative
     ):
         """Listens for drone position changes to update opengl window"""
-        QCoreApplication.sendEvent(self, DronePositionEvent(int(drone_id), position))
-        QCoreApplication.sendEvent(
-            self.osm, DronePositionEvent(int(drone_id), position)
+        positionEvent = DronePositionEvent(int(drone_id), position)
+        QCoreApplication.sendEvent(self, positionEvent)
+        QCoreApplication.sendEvent(self.osm, positionEvent)
+
+    def drone_color_listener(self, drone_id: str, r: int, g: int, b: int):
+        colorEvent = DroneColorEvent(
+            int(drone_id), r / 255.0, g / 255.0, b / 255.0, 1.0
         )
+        QCoreApplication.sendEvent(self, colorEvent)
+        QCoreApplication.sendEvent(self.osm, colorEvent)
 
     def point_to_meters(self, point: Point3d) -> Point3d:
         center = QGeoCoordinate(self.start_frame[0], self.start_frame[1])

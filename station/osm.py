@@ -100,7 +100,7 @@ class OSM(QQuickWidget):
         zoom_amount = 1 if e.angleDelta().y() > 0 else -1
         current_zoom = self.map_object.property("zoomLevel")
         self.map_object.setProperty(
-            "zoomLevel", min(15, max(2, current_zoom + zoom_amount))
+            "zoomLevel", min(19, max(2, current_zoom + zoom_amount))
         )
 
     @override

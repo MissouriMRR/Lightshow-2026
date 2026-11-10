@@ -80,7 +80,6 @@ if (DO_BUILD)
 
     target_sources(source_lib
         PRIVATE
-            mainloop.cpp
             button.cpp
             mesh.cpp
             quader.cpp

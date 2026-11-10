@@ -5,7 +5,6 @@
  */
 
 #include "gui.h"
-#include "mainloop.h"
 #include "mesh.h"
 #include "qmainwindow.h"
 #include <QApplication>
