@@ -111,7 +111,7 @@ void Drone::addInstance(DroneData droneData) {
 void Drone::addInstance(int id) {
     addInstance(DroneData{
         glm::vec3(0, 0, 0),
-        glm::vec4((float)rand() / RAND_MAX, (float)rand() / RAND_MAX, (float)rand() / RAND_MAX, 0.0),
+        glm::vec4(1.0, 1.0, 1.0, 0.0),
         id,
         DroneState::DISCONNECTED,
         "999.999.999.999:9999",
