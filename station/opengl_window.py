@@ -193,6 +193,16 @@ class OpenGLWindow(QMainWindow):
         self.furthest_distance = self.calc_furthest_distance()
 
         self.telemetry = TelemetryDisplay()
+        state = DroneState()
+        self.telemetry.add_drone(1, DroneState())
+        self.telemetry.add_drone(2, state)
+        self.telemetry.add_drone(3, DroneState())
+        self.telemetry.add_drone(4, DroneState())
+        state.add_line((6, "asdf"))
+        state.add_line((5, "what"))
+        state.add_line((4, "ohno"))
+        state.add_line((3, "ack"))
+        state.status = opengl_station.DroneStatus.CONNECTED
 
         mainBox = QHBoxLayout()
         droneViewSplit = QVBoxLayout()

@@ -1,27 +1,66 @@
-from typing import cast, override
+from typing import Callable, cast, override
 
-from PySide6.QtCore import QEvent
-from PySide6.QtGui import QColor, QMouseEvent, QPalette
-from PySide6.QtWidgets import QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtCore import QEvent, QModelIndex, QObject, QPersistentModelIndex, QPoint, QSize, Qt
+from PySide6.QtGui import QColor, QMouseEvent, QPaintEvent, QPainter, QPalette, QRegion
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QListView, QListWidget, QListWidgetItem, QPushButton, QSizePolicy, QStyle, QStyleOptionViewItem, QStyledItemDelegate, QVBoxLayout, QWidget
+from opengl_station import DroneStatus
 
 from common.drone_state import DroneState
+
+from pymavlink import mavutil
 
 
 class DroneNotFoundError(Exception):
     pass
 
 
+class SmallLabel(QLabel):
+    def __init__(self, text: str | None):
+        super().__init__(text)
+
+        self.setSizePolicy(
+                QSizePolicy.Policy.Fixed,
+                QSizePolicy.Policy.Fixed,
+                )
+
+
+class ClickFilter(QObject):
+    f: Callable[[], None]
+
+    def __init__(self, parent: QObject, f: Callable[[], None]):
+        super().__init__(parent)
+        self.f = f
+
+    @override
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if event.type() == QEvent.Type.MouseButtonPress:
+            self.f()
+            return True
+
+        return super().eventFilter(watched, event)
+
+
 class DroneTelemetry(QWidget):
     id: int
     state: DroneState
-    messages: QWidget
     messageLayout: QVBoxLayout
 
-    def __init__(self, parent: QWidget, id: int, state: DroneState):
+    base: QWidget
+    arrow: SmallLabel
+
+    info: QWidget
+
+    stateLabel: QLabel
+    battLabel: QLabel
+
+    item: QListWidgetItem
+
+    def __init__(self, parent: QWidget, id: int, state: DroneState, item: QListWidgetItem):
         super().__init__(parent)
 
         self.id = id
         self.state = state
+        self.item = item
 
         self.setAutoFillBackground(True)
         palette = self.palette()
@@ -38,48 +77,124 @@ class DroneTelemetry(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
-        layout.addWidget(QLabel(str(id)))
+        self.base = QWidget()
+        self.setSeverityColor(self.base, self.state.min_line)
+        self.base.installEventFilter(ClickFilter(self, self.onClick))
 
-        self.messages = QWidget()
+        baseLayout = QHBoxLayout()
+        self.base.setLayout(baseLayout)
+        baseLayout.setSpacing(0)
+        baseLayout.setContentsMargins(0, 0, 0, 0)
+        baseLayout.addWidget(SmallLabel(str(id)))
+
+        baseLayout.addStretch()
+
+        self.arrow = SmallLabel("\\/")
+        baseLayout.addWidget(self.arrow)
+
+        layout.addWidget(self.base)
+
+        messages = QWidget()
         self.messageLayout = QVBoxLayout()
-        self.messages.setLayout(self.messageLayout)
+        messages.setLayout(self.messageLayout)
         self.messageLayout.setSpacing(0)
         self.messageLayout.setContentsMargins(0, 0, 0, 0)
 
-        layout.addWidget(self.messages)
+        statuses = QWidget()
+        statuses_layout = QHBoxLayout()
+        statuses_layout.setSpacing(0)
+        statuses_layout.setContentsMargins(0, 0, 0, 0)
+        statuses.setLayout(statuses_layout)
 
-        self.messageLayout.addWidget(QLabel("asdf"))
-        self.messageLayout.addWidget(QLabel("asdf"))
-        self.messageLayout.addWidget(QLabel("asdf"))
-        self.messageLayout.addWidget(QLabel("asdf"))
+        self.stateLabel = SmallLabel("")
+        self.battLabel = SmallLabel("")
 
-        self.messages.hide()
+        statuses_layout.addWidget(SmallLabel("STATUS: "))
+        statuses_layout.addWidget(self.stateLabel)
+        statuses_layout.addWidget(QWidget())
+        statuses_layout.addWidget(SmallLabel("BATT: "))
+        statuses_layout.addWidget(self.battLabel)
+
+        self.info = QWidget()
+        infoLayout = QVBoxLayout()
+        infoLayout.setSpacing(0)
+        infoLayout.setContentsMargins(0, 0, 0, 0)
+        self.info.setLayout(infoLayout)
+
+        infoLayout.addWidget(statuses)
+        infoLayout.addWidget(messages)
+
+        layout.addWidget(self.info)
+
+        self.info.hide()
+        self.item.setData(Qt.ItemDataRole.UserRole, self.state.min_line)
+
+    def setSeverityColor(self, widget: QWidget, severity: int) -> None:
+        color: str
+        if severity <= mavutil.mavlink.MAV_SEVERITY_ERROR:
+            color = "red"
+        elif severity == mavutil.mavlink.MAV_SEVERITY_WARNING:
+            color = "yellow"
+        else:
+            color = "white"
+        widget.setStyleSheet(f"background-color: {color};")
 
     @override
-    def mousePressEvent(self, event: QMouseEvent, /) -> None:
-        self.messages.setVisible(not self.messages.isVisible())
+    def paintEvent(self, event: QPaintEvent, /) -> None:
+        self.item.setData(Qt.ItemDataRole.UserRole, self.state.min_line)
+
+        self.stateLabel.setText(["DISCONNECTED", "CONNECTED", "ARMED"][self.state.status.value])
+        self.battLabel.setText(f"{self.state.battery:.1f}")
+
+        self.setSeverityColor(self.base, self.state.min_line)
+
+        lines = self.state.get_lines()
+        for i in range(len(lines)):
+            item = self.messageLayout.itemAt(i)
+            widget: QLabel
+            if item is None:
+                widget = QLabel()
+                widget.setAutoFillBackground(True)
+                self.messageLayout.addWidget(widget)
+            else:
+                widget = item.widget()  # pyright: ignore[reportAssignmentType]
+            
+            severity, msg = lines[i]
+            widget.setText(msg)
+
+            self.setSeverityColor(widget, severity)
+
+    def onClick(self) -> None:
+        self.info.setVisible(not self.info.isVisible())
+        self.item.setSizeHint(self.sizeHint())
+        self.item.listWidget().updateGeometries()
+
+        self.arrow.setText("/\\" if self.info.isVisible() else "\\/")
 
 
-class TelemetryDisplay(QWidget):
+class DroneTelemetryItem(QListWidgetItem):
+    @override
+    def __lt__(self, other: QListWidgetItem):
+        return self.data(Qt.ItemDataRole.UserRole) < other.data(Qt.ItemDataRole.UserRole)
+
+
+class TelemetryDisplay(QListWidget):
     drones: dict[int, DroneTelemetry]
-    hbox: QVBoxLayout
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
 
         self.drones = {}
-        self.hbox = QVBoxLayout()
-        self.hbox.setSpacing(0)
-        self.hbox.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(self.hbox)
+        self.setSortingEnabled(True)
 
-        self.hbox.addWidget(QWidget())
+    def add_drone(self, drone_id: int, state: DroneState):
+        item = DroneTelemetryItem()
+        item.setData(Qt.ItemDataRole.UserRole, 7)
+        self.addItem(item)
 
-    def set_drone(self, drone_id: int, state: DroneState):
-        drone = self.drones.get(drone_id)
-        if drone is None:
-            widget = DroneTelemetry(self, drone_id, state)
-            self.drones[drone_id] = widget
-            self.hbox.insertWidget(self.hbox.count() - 1, widget)
-        else:
-            drone.state = state
+        widget = DroneTelemetry(self, drone_id, state, item)
+        item.setSizeHint(widget.sizeHint())
+
+        self.setItemWidget(item, widget)
+
+        self.drones[drone_id] = widget
