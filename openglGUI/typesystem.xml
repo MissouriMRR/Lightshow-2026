@@ -8,5 +8,5 @@
 
     <object-type name="Gui"/>
     <object-type name="GuiReadyEvent"/>
-    <enum-type name="DroneState"/>
+    <enum-type name="DroneStatus"/>
 </typesystem>
