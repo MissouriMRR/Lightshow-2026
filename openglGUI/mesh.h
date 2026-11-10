@@ -14,7 +14,7 @@
 
 #include "shader.h"
 
-enum class DroneState {
+enum class DroneStatus {
     DISCONNECTED,
     CONNECTED,
     ARMED,
@@ -24,7 +24,7 @@ struct DroneData {
     glm::vec3 position;
     glm::vec4 color;
     int id;
-    DroneState state;
+    DroneStatus state;
     std::string ip;
 };
 

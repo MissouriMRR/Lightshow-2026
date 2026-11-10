@@ -113,7 +113,7 @@ void Drone::addInstance(int id) {
         glm::vec3(0, 0, 0),
         glm::vec4(1.0, 1.0, 1.0, 0.0),
         id,
-        DroneState::DISCONNECTED,
+        DroneStatus::DISCONNECTED,
         "999.999.999.999:9999",
     });
 }
@@ -146,10 +146,10 @@ void Drone::setColor(int id, float r, float g, float b, float a) {
     resetVBO();
 }
 
-void Drone::setState(int id, DroneState state) {
+void Drone::setState(int id, DroneStatus state) {
     if (getInstance(id) == nullptr) addInstance(id);
 
-    getInstance(id)->color.a = state != DroneState::DISCONNECTED;
+    getInstance(id)->color.a = state != DroneStatus::DISCONNECTED;
     resetVBO();
     getInstance(id)->state = state;
 }
@@ -181,15 +181,15 @@ void Drone::drawInstances(Quader *quader, glm::mat4 projection, Camera *camera) 
     for (int i = 0; i < droneDatas.size(); i++) {
         glm::vec3 color;
         switch (droneDatas[i].state) {
-        case DroneState::DISCONNECTED:
+        case DroneStatus::DISCONNECTED:
             color = glm::vec3(1, 0, 0);
             break;
 
-        case DroneState::CONNECTED:
+        case DroneStatus::CONNECTED:
             color = glm::vec3(1, 1, 0);
             break;
 
-        case DroneState::ARMED:
+        case DroneStatus::ARMED:
             color = glm::vec3(0, 1, 0);
             break;
         }

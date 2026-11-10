@@ -21,8 +21,8 @@ class Filtery : public QObject {
     bool eventFilter(QObject *object, QEvent *event) {
         if (event->type() == GuiReadyEvent::event_number) {
             std::cout << "asdf" << std::endl;
-            gui->setState(1, (DroneState)1);
-            gui->setState(2, (DroneState)1);
+            gui->setState(1, (DroneStatus)1);
+            gui->setState(2, (DroneStatus)1);
 
             gui->setPos(1, 0, 0, 0);
             gui->setPos(2, 0, 10, 0);

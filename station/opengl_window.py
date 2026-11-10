@@ -12,10 +12,12 @@ from PySide6.QtWidgets import (
     QLayout,
     QMainWindow,
     QPushButton,
+    QScrollArea,
     QVBoxLayout,
     QWidget,
 )
 
+from common.drone_state import DroneState
 from common.utils import loc_to_point, point_to_list
 from station.events import (
     ArmEvent,
@@ -26,6 +28,7 @@ from station.events import (
 from station.osm import OSM
 from station.point import Point3d
 from station.station_server import StationServer
+from station.telemetry_display import TelemetryDisplay
 
 
 class Color(QWidget):
@@ -132,6 +135,7 @@ class OpenGLWindow(QMainWindow):
 
     opengl_gui: opengl_station.Gui
     osm: OSM
+    telemetry: TelemetryDisplay
 
     tabsInternalList: list[Tab]
     activeTab: int = 0
@@ -188,6 +192,8 @@ class OpenGLWindow(QMainWindow):
 
         self.furthest_distance = self.calc_furthest_distance()
 
+        self.telemetry = TelemetryDisplay()
+
         mainBox = QHBoxLayout()
         droneViewSplit = QVBoxLayout()
         buttons = QHBoxLayout()
@@ -203,6 +209,11 @@ class OpenGLWindow(QMainWindow):
             Tab("aqua", mainBox, droneViewWidget, "Drone View")
         )
         self.tabsInternalList.append(Tab("orange", mainBox, self.osm, "Street View"))
+
+        scroll = QScrollArea()
+        scroll.setWidget(self.telemetry)
+        scroll.setWidgetResizable(True)
+        self.tabsInternalList.append(Tab("green", mainBox, scroll, "Telemetry"))
 
         tabsHolder.setLayout(tabsHolderLayout)
         tabsHolderLayout.setSpacing(10)
@@ -254,15 +265,15 @@ class OpenGLWindow(QMainWindow):
                 event = cast(ArmEvent, event)
                 self.opengl_gui.setState(
                     int(event.id),
-                    opengl_station.DroneState.ARMED
+                    opengl_station.DroneStatus.ARMED
                     if event.armed
-                    else opengl_station.DroneState.CONNECTED,
+                    else opengl_station.DroneStatus.CONNECTED,
                 )
 
             case DroneConnectEvent.event_number:
                 event = cast(DroneConnectEvent, event)
                 self.opengl_gui.setState(
-                    int(event.id), opengl_station.DroneState.CONNECTED
+                    int(event.id), opengl_station.DroneStatus.CONNECTED
                 )
 
             case DronePositionEvent.event_number:

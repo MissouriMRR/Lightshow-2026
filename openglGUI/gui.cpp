@@ -206,7 +206,7 @@ void Gui::setIp(int id, std::string ip) {
     update();
 }
 
-void Gui::setState(int id, DroneState state) {
+void Gui::setState(int id, DroneStatus state) {
     if (droney == nullptr) std::cout << "droney is uninitialized you idiot" << std::endl;
     else
         droney->setState(id, state);

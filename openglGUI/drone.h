@@ -30,7 +30,7 @@ class Drone {
     void addInstance(int id);
     void setPos(int id, float x, float y, float z);
     void setColor(int id, float r, float g, float b, float a);
-    void setState(int id, DroneState state);
+    void setState(int id, DroneStatus state);
     void setIp(int id, std::string ip);
 
     void drawInstances(Quader *quader, glm::mat4 projection, Camera *camera);
