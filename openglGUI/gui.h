@@ -33,9 +33,9 @@ class Gui : public QOpenGLWidget {
     void setColor(int id, float r, float g, float b, float a);
     void setPos(int id, float x, float y, float z);
     void setIp(int id, std::string ip);
-    void setState(int id, DroneStatus state);
+    void setStatus(int id, DroneStatus state);
 
-    Drone *droney = nullptr;
+    Drone *drone = nullptr;
 
   protected:
     void keyPressEvent(QKeyEvent *event) override;

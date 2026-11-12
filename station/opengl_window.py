@@ -1,9 +1,9 @@
 from math import copysign
-from typing import cast, override
+from typing import override
 
 import dronekit
 import opengl_station  # loads opengl_station shared library that the c++ was compiled into
-from PySide6.QtCore import QCoreApplication, QEvent, Qt, Signal
+from PySide6.QtCore import QEvent, Qt, Signal, Slot
 from PySide6.QtGui import QColor, QEnterEvent, QMouseEvent, QPalette
 from PySide6.QtPositioning import QGeoCoordinate
 from PySide6.QtWidgets import (
@@ -19,12 +19,6 @@ from PySide6.QtWidgets import (
 
 from common.drone_state import DroneState
 from common.utils import loc_to_point, point_to_list
-from station.events import (
-    ArmEvent,
-    DroneColorEvent,
-    DroneConnectEvent,
-    DronePositionEvent,
-)
 from station.osm import OSM
 from station.point import Point3d
 from station.station_server import StationServer
@@ -153,12 +147,9 @@ class OpenGLWindow(QMainWindow):
         self.resize(800, 600)
 
         self.station_server = station_server
-        station_server.set_drone_listeners(
-            self.drone_connect_listener,
-            self.arm_listener,
-            self.drone_position_listener,
-            self.drone_color_listener,
-        )
+        station_server.drone_status_changed.connect(self.drone_status_listener)
+        station_server.drone_position_changed.connect(self.drone_position_listener)
+        station_server.drone_color_changed.connect(self.drone_color_listener)
 
         self.tabsInternalList = []
 
@@ -189,6 +180,9 @@ class OpenGLWindow(QMainWindow):
         self.start_frame = self.calc_center()
         self.osm = OSM(self.start_frame)
         self.osm.hide()
+        station_server.drone_status_changed.connect(self.osm.drone_status_listener)
+        station_server.drone_position_changed.connect(self.osm.drone_position_listener)
+        station_server.drone_color_changed.connect(self.osm.drone_color_listener)
 
         self.furthest_distance = self.calc_furthest_distance()
 
@@ -271,33 +265,6 @@ class OpenGLWindow(QMainWindow):
     @override
     def event(self, event: QEvent, /) -> bool:
         match event.type():
-            case ArmEvent.event_number:
-                event = cast(ArmEvent, event)
-                self.opengl_gui.setState(
-                    int(event.id),
-                    opengl_station.DroneStatus.ARMED
-                    if event.armed
-                    else opengl_station.DroneStatus.CONNECTED,
-                )
-
-            case DroneConnectEvent.event_number:
-                event = cast(DroneConnectEvent, event)
-                self.opengl_gui.setState(
-                    int(event.id), opengl_station.DroneStatus.CONNECTED
-                )
-
-            case DronePositionEvent.event_number:
-                event = cast(DronePositionEvent, event)
-                placed = self.place_in_expanse(loc_to_point(event.position))
-                self.opengl_gui.setPos(int(event.id), placed.x, placed.y, placed.z)
-                return False
-
-            case DroneColorEvent.event_number:
-                event = cast(DroneColorEvent, event)
-                self.opengl_gui.setColor(
-                    int(event.id), event.r, event.g, event.b, event.a
-                )
-
             case opengl_station.GuiReadyEvent.event_number:
                 # add drones to opengl widget
                 config = self.station_server.config
@@ -312,28 +279,25 @@ class OpenGLWindow(QMainWindow):
 
         return True
 
-    def drone_connect_listener(self, drone_id: str):
-        """Listens for drone connection to update opengl window"""
-        QCoreApplication.sendEvent(self, DroneConnectEvent(int(drone_id)))
+    @Slot(int, opengl_station.DroneStatus)
+    def drone_status_listener(
+        self, drone_id: int, drone_status: opengl_station.DroneStatus
+    ):
+        self.opengl_gui.setStatus(drone_id, drone_status)
 
-    def arm_listener(self, drone_id: str, armed: bool):
-        """Listens for drone arming to update opengl window"""
-        QCoreApplication.sendEvent(self, ArmEvent(int(drone_id), armed))
-
+    @Slot(int, dronekit.LocationGlobalRelative)
     def drone_position_listener(
-        self, drone_id: str, position: dronekit.LocationGlobalRelative
+        self, drone_id: int, position: dronekit.LocationGlobalRelative
     ):
         """Listens for drone position changes to update opengl window"""
-        positionEvent = DronePositionEvent(int(drone_id), position)
-        QCoreApplication.sendEvent(self, positionEvent)
-        QCoreApplication.sendEvent(self.osm, positionEvent)
+        placed = self.place_in_expanse(loc_to_point(position))
+        self.opengl_gui.setPos(drone_id, placed.x, placed.y, placed.z)
 
-    def drone_color_listener(self, drone_id: str, r: int, g: int, b: int):
-        colorEvent = DroneColorEvent(
-            int(drone_id), r / 255.0, g / 255.0, b / 255.0, 1.0
+    @Slot(int, int, int, int)
+    def drone_color_listener(self, drone_id: int, r: int, g: int, b: int):
+        self.opengl_gui.setColor(
+            drone_id, r / 255.0, g / 255.0, b / 255.0, 1.0
         )
-        QCoreApplication.sendEvent(self, colorEvent)
-        QCoreApplication.sendEvent(self.osm, colorEvent)
 
     def point_to_meters(self, point: Point3d) -> Point3d:
         center = QGeoCoordinate(self.start_frame[0], self.start_frame[1])
