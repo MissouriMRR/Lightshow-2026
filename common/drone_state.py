@@ -9,7 +9,6 @@ class DroneState:
     # State?
 
     pos: dronekit.LocationGlobalRelative
-    state: dronekit.SystemStatus
     status: DroneStatus
     confirmed: bool
     frame: int
@@ -19,7 +18,6 @@ class DroneState:
 
     def __init__(self):
         self.pos = dronekit.LocationGlobalRelative(0, 0, 0)
-        self.state = dronekit.SystemStatus("UNINIT")
         self.status = DroneStatus.DISCONNECTED
         self.confirmed = True
         self.frame = -1

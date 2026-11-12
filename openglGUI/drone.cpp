@@ -146,7 +146,7 @@ void Drone::setColor(int id, float r, float g, float b, float a) {
     resetVBO();
 }
 
-void Drone::setState(int id, DroneStatus state) {
+void Drone::setStatus(int id, DroneStatus state) {
     if (getInstance(id) == nullptr) addInstance(id);
 
     getInstance(id)->color.a = state != DroneStatus::DISCONNECTED;

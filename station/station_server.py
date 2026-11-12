@@ -2,9 +2,13 @@ import asyncio
 import contextlib
 from collections.abc import Awaitable, Callable
 from enum import Enum
+from functools import reduce
 from tkinter import messagebox
 
+from PySide6.QtCore import QCoreApplication, QEvent, QObject, Signal, SignalInstance
+from PySide6.QtWidgets import QApplication
 import dronekit
+from opengl_station import DroneStatus
 
 from common.config import NETWORK_CONFIG_PATH, SHOW_PATH
 from common.drone_state import DroneState
@@ -20,7 +24,7 @@ class Message(Enum):
     HALT = 4
 
 
-class StationServer:
+class StationServer(QObject):
     config: ConfigParser
     connection: StationConnectionLike
     drones: dict[str, DroneState]
@@ -34,16 +38,16 @@ class StationServer:
 
     go: bool
 
-    drone_connect_listener: Callable[[str], None]
-    arm_listener: Callable[[str, bool], None]
-    drone_position_listener: Callable[[str, dronekit.LocationGlobalRelative], None]
-    drone_color_listener: Callable[[str, int, int, int], None]
+    drone_status_changed: Signal = Signal(int, DroneStatus)
+    drone_position_changed: Signal = Signal(int, dronekit.LocationGlobalRelative)
+    drone_color_changed: Signal = Signal(int, int, int, int)
 
     @property
     def armed(self) -> bool:
-        return not len(list(filter(lambda x: not x.armed, self.drones.values())))
+        return reduce(lambda a, b: a and b.status == DroneStatus.ARMED, self.drones.values(), True)
 
     def __init__(self, connection: StationConnectionLike | None = None) -> None:
+        super().__init__()
         self.config = ConfigParser(NETWORK_CONFIG_PATH, SHOW_PATH)
         self.config.set_self_id("0")
 
@@ -79,12 +83,6 @@ class StationServer:
 
         self.go = True
 
-        # No-op until the GUI registers real listeners (see set_drone_listener etc.)
-        self.drone_connect_listener = lambda _drone_id: None
-        self.arm_listener = lambda _drone_id, _armed: None
-        self.drone_position_listener = lambda _drone_id, _position: None
-        self.drone_color_listener = lambda _drone_id, _r, _g, _b: None
-
     async def run(self) -> None:
         await asyncio.gather(self.initial_connect(), self.process_messages())
 
@@ -112,29 +110,6 @@ class StationServer:
     def stop(self):
         self.go = False
 
-    def set_drone_listeners(
-        self,
-        drone_connect_listener: Callable[[str], None] | None,
-        arm_listener: Callable[[str, bool], None] | None,
-        drone_position_listener: Callable[[str, dronekit.LocationGlobalRelative], None]
-        | None,
-        drone_color_listener: Callable[[str, int, int, int], None] | None,
-    ) -> None:
-        if drone_connect_listener != None:
-            self.drone_connect_listener = drone_connect_listener
-        if arm_listener != None:
-            self.arm_listener = arm_listener
-        if drone_position_listener != None:
-            self.drone_position_listener = drone_position_listener
-        if drone_color_listener != None:
-            self.drone_color_listener = drone_color_listener
-
-    def set_drone_position_listener(
-        self,
-        drone_position_listener: Callable[[str, dronekit.LocationGlobalRelative], None],
-    ):
-        self.drone_position_listener = drone_position_listener
-
     async def initial_connect(self) -> None:
         ids = self.config.get_drone_ids()[1:]
 
@@ -142,7 +117,7 @@ class StationServer:
             with contextlib.suppress(TimeoutError):
                 async with asyncio.timeout(2):
                     await self.connection.ping(drone_id)
-                    self.drone_connect_listener(drone_id)
+                    self.drone_status_changed.emit(int(drone_id), DroneStatus.CONNECTED)
                     self.drones[drone_id] = DroneState()
                     await self.connection.send_poll(drone_id)
 
@@ -154,7 +129,7 @@ class StationServer:
     def set_position(self, id: str, pos: dronekit.LocationGlobalRelative) -> None:
         if id in self.drones:
             self.drones[id].pos = pos
-            self.drone_position_listener(id, pos)
+            self.drone_position_changed.emit(int(id), pos)
 
     def get_frame(self, num: int) -> list[dronekit.LocationGlobalRelative]:
         return self.frames[num]
@@ -169,11 +144,9 @@ class StationServer:
         dearmeds: list[Awaitable[object]] = []
         for drone_id in self.drones:
             dearmeds.append(self.connection.dearm_drone(drone_id))
-            self.drones[drone_id].armed = False
+            self.drones[drone_id].status = DroneStatus.CONNECTED;
+            self.drone_status_changed.emit(int(drone_id), DroneStatus.CONNECTED)
         await asyncio.gather(*dearmeds)
-
-        for drone_id in self.drones:
-            self.arm_listener(drone_id, False)
 
     def arm(self) -> None:
         self.current_message = Message.ARM
@@ -187,7 +160,8 @@ class StationServer:
 
         async def and_set(drone_id: str) -> bool:
             out = await self.connection.arm_drone(drone_id)
-            self.drones[drone_id].armed = True
+            self.drones[drone_id].status = DroneStatus.ARMED;
+            self.drone_status_changed.emit(int(drone_id), DroneStatus.ARMED)
             return out
 
         for result in await asyncio.gather(*[and_set(d) for d in self.drones]):
@@ -195,9 +169,6 @@ class StationServer:
                 messagebox.showerror("Error", "Arming failed")
                 await self.dearm()
                 return
-
-        for drone_id in self.drones:
-            self.arm_listener(drone_id, True)
 
     def takeoff(self) -> None:
         self.current_message = Message.TAKEOFF
@@ -239,7 +210,7 @@ class StationServer:
                     drone_id, "frame " + str(self.show_index)
                 )
                 if color is not None:
-                    self.drone_color_listener(drone_id, *color)
+                    self.drone_color_changed.emit(int(drone_id), *color)
 
                 self.drones[drone_id].confirmed = True
                 self.drones[drone_id].frame = self.show_index
@@ -268,9 +239,9 @@ class StationServer:
             await self.connection.send_landing(drone_id)
             self.drones[drone_id].confirmed = True
             self.drones[drone_id].frame = -1
-            self.drones[drone_id].armed = False
+            self.drones[drone_id].status = DroneStatus.CONNECTED
             await self.connection.send_poll(drone_id)
-            self.arm_listener(drone_id, False)
+            self.drone_status_changed.emit(int(drone_id), DroneStatus.CONNECTED)
 
     def halt(self) -> None:
         self.current_message = Message.HALT
@@ -278,4 +249,5 @@ class StationServer:
     async def _halt(self) -> None:
         await asyncio.gather(*[self.connection.send_halt(d) for d in self.drones])
         for drone_id in self.drones:
-            self.arm_listener(drone_id, False)
+            self.drone_status_changed.emit(int(drone_id), DroneStatus.CONNECTED)
+
