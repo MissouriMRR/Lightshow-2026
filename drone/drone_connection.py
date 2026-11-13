@@ -5,7 +5,7 @@ import time
 from typing import Protocol
 
 from drone.drone_command_handler import DroneCommandHandler
-from drone.json_parser import ConfigParser
+from drone.config_parser import ConfigParser
 from drone.vehicle import AnyVehicle
 from interdrone.message_types import Message, MessageType
 from interdrone.networking_interface import NetworkingInterface
@@ -71,7 +71,7 @@ class DroneConnection:
 
         if self.command_handler.pending_command:
             match self.command_handler.pending_command.message.id:
-                case MessageType.ARM_RESPONSE:
+                case MessageType.ARM_CONFIRMATION:
                     await self.drone.arm()
                 case MessageType.TAKEOFF:
                     await self.drone.takeoff()
@@ -81,8 +81,6 @@ class DroneConnection:
                     await self.drone.land()
                 case MessageType.HALT:
                     await self.drone.halt()
-                case MessageType.POLL_DRONE_RESPONSE:
-                    self.set_drone_pos()
                 case _:
                     pass
             self.command_handler.pending_command.completed = True

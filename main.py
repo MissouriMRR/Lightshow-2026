@@ -13,7 +13,7 @@ import time
 
 from common.config import NETWORK_CONFIG_PATH
 from drone.drone_command_handler import DroneCommandHandler
-from drone.json_parser import ConfigParser
+from drone.config_parser import ConfigParser
 from interdrone.message_types import Message, MessageType
 from interdrone.networking_interface import NetworkingInterface
 from interdrone.networking_thread import NetworkingThread

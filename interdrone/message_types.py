@@ -10,14 +10,11 @@ class MessageType(Enum):
     # Lightshow
     GS_TEST = 300
 
-    POLL_DRONE = 301
-    POLL_DRONE_RESPONSE = 302
-
     PING = 303
     PING_RESPONSE = 304
 
     ARM = 305
-    ARM_RESPONSE = 306
+    ARM_CONFIRMATION = 306
 
     TAKEOFF = 310
     FRAME_STEP = 311
@@ -90,41 +87,14 @@ EXPECTED_SCHEMA: Final[dict[MessageType, dict[str, Any]]] = {
         "dronesToSendData": tuple[int, ...],
         "payload": str,
     },
-    MessageType.POLL_DRONE: {
-        "id": MessageType.POLL_DRONE,
-        "dronesToSendData": tuple[int, ...],
-        "payload": str,
-    },
-    MessageType.POLL_DRONE_RESPONSE: {
-        "id": MessageType.POLL_DRONE_RESPONSE,
-        "dronesToSendData": tuple[int, ...],
-        "droneId": int,
-        "location": str,  # JSON string or formatted string
-        "status": str,
-        "payload": str,
-    },
     MessageType.PING: {
         "id": MessageType.PING,
         "dronesToSendData": tuple[int, ...],
-        "senderId": int,
-        "payload": str,
-    },
-    MessageType.PING_RESPONSE: {
-        "id": MessageType.PING_RESPONSE,
-        "dronesToSendData": tuple[int, ...],
-        "senderId": int,
         "payload": str,
     },
     MessageType.ARM: {
         "id": MessageType.ARM,
         "dronesToSendData": tuple[int, ...],
-        "senderId": int,
-        "payload": str,
-    },
-    MessageType.ARM_RESPONSE: {
-        "id": MessageType.ARM_RESPONSE,
-        "dronesToSendData": tuple[int, ...],
-        "senderId": int,
         "payload": str,
     },
     MessageType.TAKEOFF: {
@@ -148,6 +118,20 @@ EXPECTED_SCHEMA: Final[dict[MessageType, dict[str, Any]]] = {
         "payload": str,
     },
     # Confirmation responses
+    MessageType.PING_RESPONSE: {
+        "id": MessageType.PING_RESPONSE,
+        "dronesToSendData": tuple[int, ...],
+        "droneId": int,
+        "status": str,
+        "payload": str,
+    },
+    MessageType.ARM_CONFIRMATION: {
+        "id": MessageType.ARM_CONFIRMATION,
+        "dronesToSendData": tuple[int, ...],
+        "droneId": int,
+        "status": str,
+        "payload": str,
+    },
     MessageType.TAKEOFF_CONFIRMATION: {
         "id": MessageType.TAKEOFF_CONFIRMATION,
         "dronesToSendData": tuple[int, ...],

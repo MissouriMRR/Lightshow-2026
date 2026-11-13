@@ -3,7 +3,7 @@ import time
 from asyncio import StreamReader, StreamWriter
 from asyncio.queues import Queue
 
-from drone.json_parser import ConfigParser
+from drone.config_parser import ConfigParser
 from interdrone.json_message_utilities import JsonMessageUtilities
 from interdrone.message_types import Message, MessageType
 
@@ -101,7 +101,6 @@ class Server:
                 | MessageType.FRAME_STEP
                 | MessageType.LAND
                 | MessageType.HALT
-                | MessageType.POLL_DRONE
                 | MessageType.EMERGENCY_HALT
                 | MessageType.ARM
             ):
@@ -113,12 +112,8 @@ class Server:
                 | MessageType.FRAME_STEP_CONFIRMATION
                 | MessageType.HALT_CONFIRMATION
                 | MessageType.LAND_CONFIRMATION
-                | MessageType.ARM_RESPONSE
+                | MessageType.ARM_CONFIRMATION
             ):
-                await self.serverOutData.put(item=message)
-
-            # Poll response - forward to requester
-            case MessageType.POLL_DRONE_RESPONSE:
                 await self.serverOutData.put(item=message)
 
             # Ping messages - forward to app for handling

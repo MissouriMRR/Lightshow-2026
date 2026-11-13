@@ -11,7 +11,7 @@ import threading
 import time
 
 from common.config import NETWORK_CONFIG_PATH, SHOW_PATH
-from drone.json_parser import ConfigParser
+from drone.config_parser import ConfigParser
 from interdrone.networking_interface import NetworkingInterface
 from interdrone.networking_thread import NetworkingThread
 from station.ground_station_controller import GroundStationController

@@ -13,6 +13,7 @@
 #include <iostream>
 
 #include "glm/gtc/type_ptr.hpp"
+#include "qopenglwidget.h"
 #include "shader.h"
 #include "stb_image.h"
 
@@ -24,7 +25,7 @@ int GuiReadyEvent::event_number = QEvent::registerEventType();
 
 GuiReadyEvent::GuiReadyEvent() : QEvent((QEvent::Type)event_number) {}
 
-Gui::Gui(QWidget *parent) { setMouseTracking(true); }
+Gui::Gui(QWidget *parent) : QOpenGLWidget(parent) { setMouseTracking(true); }
 
 void Gui::initializeGL() {
     long time;
