@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import dronekit
-
 MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 
 # Hand-edited network settings (drone/GS IPs and ports, localInfo)
@@ -13,16 +11,3 @@ SHOW_PATH = str(MODELS_DIR / "show.json")
 # ground) are skipped, so takeoff climbs straight to the first airborne frame.
 # TODO: remove once timed playback handles takeoff itself
 MIN_FRAME_ALT_M = 1.0
-
-
-class Config:
-    frames: list[list[dronekit.LocationGlobalRelative]]
-    ips: list[str]
-
-    def __init__(
-        self,
-        frames: list[list[dronekit.LocationGlobalRelative]],
-        ips: list[str],
-    ):
-        self.frames = frames
-        self.ips = ips

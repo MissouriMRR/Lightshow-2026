@@ -9,7 +9,7 @@ import dronekit
 
 from drone.drone import Drone
 from drone.goto import move_to
-from drone.json_parser import ConfigParser
+from drone.config_parser import ConfigParser
 from drone.vehicle import AnyVehicle
 
 

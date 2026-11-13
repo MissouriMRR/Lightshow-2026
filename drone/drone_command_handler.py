@@ -54,7 +54,6 @@ class DroneCommandHandler:
             MessageType.FRAME_STEP: 1.0,
             MessageType.LAND: 2.0,
             MessageType.HALT: 0.5,
-            MessageType.POLL_DRONE: 0.1,
             MessageType.ARM: 2.0,
         }
 
@@ -110,8 +109,7 @@ class DroneCommandHandler:
                 | MessageType.FRAME_STEP_CONFIRMATION
                 | MessageType.HALT_CONFIRMATION
                 | MessageType.LAND_CONFIRMATION
-                | MessageType.POLL_DRONE_RESPONSE
-                | MessageType.ARM_RESPONSE
+                | MessageType.ARM_CONFIRMATION
             ):
                 pass
 
@@ -127,9 +125,6 @@ class DroneCommandHandler:
             case MessageType.HALT:
                 self._handle_halt(message)
 
-            case MessageType.POLL_DRONE:
-                self._handle_poll_drone(message)
-
             case MessageType.ARM:
                 self._handle_arm(message)
 
@@ -138,9 +133,6 @@ class DroneCommandHandler:
 
             case MessageType.PING:
                 self._handle_ping(message)
-
-            case MessageType.PING_RESPONSE:
-                self._handle_ping_response(message)
 
             case _:
                 print(f"[Drone {self.drone_id}] Unknown command: {message.id.name}")
@@ -206,31 +198,6 @@ class DroneCommandHandler:
         )
         self.drone_status = "halting"
 
-    def _handle_poll_drone(self, message: Message) -> None:
-        """Handle POLL_DRONE request - send back location/status"""
-        if self.pending_command is not None:
-            print(f"[Drone {self.drone_id}] ✗ Already executing command, ignoring poll")
-            return
-
-        print(f"[Drone {self.drone_id}] → Responding to POLL_DRONE")
-
-        message = Message.create(
-            id=MessageType.POLL_DRONE_RESPONSE,
-            dronesToSendData=(0,),
-            data={
-                "droneId": self.drone_id,
-                "location": str(self.drone_location),
-                "status": "success",
-                "payload": "",
-            },
-        )
-
-        self.pending_command = PendingCommand(
-            message=message,
-            start_time=time.time(),
-            duration=self.command_durations[MessageType.POLL_DRONE],
-        )
-
     def _handle_arm(self, message: Message) -> None:
         """Handle ARM command - arm the drone via DroneKit"""
         if self.pending_command is not None:
@@ -240,9 +207,9 @@ class DroneCommandHandler:
         print(f"[Drone {self.drone_id}] → Executing ARM")
 
         message = Message.create(
-            id=MessageType.ARM_RESPONSE,
+            id=MessageType.ARM_CONFIRMATION,
             dronesToSendData=(0,),
-            data={"senderId": self.drone_id, "payload": "success"},
+            data={"droneId": self.drone_id, "status": "success", "payload": ""},
         )
 
         self.pending_command = PendingCommand(
@@ -260,36 +227,19 @@ class DroneCommandHandler:
 
     def _handle_ping(self, message: Message) -> None:
         """Handle incoming PING - respond immediately"""
-        sender_id = message.data.get("senderId", 0)
+        sender_id = message.data.get("droneId", 0)
         print(f"[Drone {self.drone_id}] PING received from {sender_id}, responding")
 
         response = Message.create(
             id=MessageType.PING_RESPONSE,
             dronesToSendData=(sender_id,),
             data={
-                "senderId": self.drone_id,
-                "payload": f"pong from drone {self.drone_id}",
+                "droneId": self.drone_id,
+                "status": "success",
+                "payload": "",
             },
         )
         self.networking.queue_client_message(response)
-
-    def _handle_ping_response(self, message: Message) -> None:
-        """Handle incoming PING_RESPONSE"""
-        sender_id = message.data.get("senderId", 0)
-        print(f"[Drone {self.drone_id}] PING_RESPONSE from {sender_id}")
-
-    def send_ping(self, target_id: int = 0) -> None:
-        """Send a PING to a specific target (default: GS at ID 0)"""
-        ping_message = Message.create(
-            id=MessageType.PING,
-            dronesToSendData=(target_id,),
-            data={
-                "senderId": self.drone_id,
-                "payload": f"ping from drone {self.drone_id}",
-            },
-        )
-        self.networking.queue_client_message(ping_message)
-        print(f"[Drone {self.drone_id}] Sent PING to {target_id}")
 
     def _check_command_completion(self) -> None:
         """Check if pending command has finished executing"""
@@ -330,8 +280,6 @@ class DroneCommandHandler:
             case MessageType.HALT:
                 confirmation_type = MessageType.HALT_CONFIRMATION
                 self.drone_status = "idle"
-            case MessageType.POLL_DRONE_RESPONSE:
-                self.pending_command.message.data["location"] = str(self.drone_location)
             case _:
                 pass
 
