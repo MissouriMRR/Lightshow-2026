@@ -1,4 +1,4 @@
-"""Drone-node entry point.
+"""Networking-only test drone, with no vehicle.
 
 Runs the low-level networking loop for a single drone: connects to the mesh,
 processes inbound commands via :class:`~drone.drone_command_handler.DroneCommandHandler`,

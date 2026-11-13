@@ -106,7 +106,7 @@ The previous instructions shoul be sufficient to "install" the drone code, as it
 
 ### Installing the Ground Station
 
-Installing the ground station will be more involved, since it is partially written in C++. 
+Installing the ground station will be more involved, since it is partially written in C++.
 
 <!-- VBox guest additions used in making of instructions -->
 <!-- May need to install bzip build-essential gcc make perl dkms -->
@@ -141,7 +141,8 @@ The ground station can finally be ran with the following command:
 
 ## Repository Structure
 
-- `main.py` - Simulates a drone, which connects over the network to the ground station.
+- `main.py` - The drone, which connects over the network to the ground station and flies the show. Uses a simulated vehicle by default; pass `--sitl` to fly an ArduPilot SITL instance or `--connect` to use a real flight controller.
+- `networking_test.py` - A networking-only drone with no vehicle, for testing communication with the ground station.
 - `station_opengl.py` - The ground station, which currently simulates drones in flight.
 - `compileOpenglGUI.sh` - The script to compile the ground station's OpenGL frontend.
 - `pyproject.toml` - Project metadata, dependencies, and tool configurations for ruff, basedpyright, and uv.
@@ -152,7 +153,7 @@ The ground station can finally be ran with the following command:
 - `.github/workflows/` - The GitHub Actions CI/CD workflows that run linting and commit message checks.
 - `.venv/` - The virtual environment created by `uv sync`. It is not tracked by git.
 - `.gitignore` - Lists the files and folders that git should not track.
-- `.gitattributes` - Assigns attributes to files by their extension. It is useful in preventing line endings from being messed up by WSL work. 
+- `.gitattributes` - Assigns attributes to files by their extension. It is useful in preventing line endings from being messed up by WSL work.
 
 ## Development
 

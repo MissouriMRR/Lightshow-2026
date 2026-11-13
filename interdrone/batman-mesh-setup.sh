@@ -136,6 +136,6 @@ cd IARC-10/Interdrone-Communication
 
 log_message "Changed to directory"
 
-uv run main.py -i $PI_NUMBER
+uv run networking_test.py -i $PI_NUMBER
 
 exit 0
