@@ -18,7 +18,8 @@ class DroneState:
     status: DroneStatus = DroneStatus.DISCONNECTED
     frame: int = -1
     battery: float = 0.0
-    _lines: list[tuple[int, str]] = field(default_factory=lambda: [])
+    prearm_passing: bool = True
+    _lines: list[tuple[int, str]] = field(default_factory=list)
     min_line: int = 7
     state: DroneStatus = DroneStatus.DISCONNECTED
     last_heartbeat: float = field(default_factory=time.time)

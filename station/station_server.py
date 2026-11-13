@@ -5,10 +5,12 @@ import queue
 import threading
 import time
 from tkinter import messagebox
+from typing import Any
 
 from PySide6.QtCore import QObject, Signal
 import dronekit
 from opengl_station import DroneStatus
+from pymavlink import mavutil
 
 from common.config import NETWORK_CONFIG_PATH, SHOW_PATH
 from common.drone_state import DroneState
@@ -45,6 +47,11 @@ class StationServer(QObject):
     drone_position_changed: Signal = Signal(int, dronekit.LocationGlobalRelative)
     drone_color_changed: Signal = Signal(int, int, int, int)
 
+    prearm_passing_changed: Signal = Signal(int, bool)
+    status_text_added: Signal = Signal(int, int, str)
+    battery_changed: Signal = Signal(int, int)
+
+
     def __init__(self) -> None:
         super().__init__()
         self.config = ConfigParser(NETWORK_CONFIG_PATH, SHOW_PATH)
@@ -58,7 +65,6 @@ class StationServer(QObject):
         for drone_id in all_drone_ids:
             if drone_id != "0":
                 self.drones[int(drone_id)] = DroneState()
-                self.drone_status_changed.emit(int(drone_id), DroneStatus.DISCONNECTED)
 
         # Threading
         self._networking_thread = None
@@ -84,15 +90,17 @@ class StationServer(QObject):
         self._networking_thread.start()
 
         self.networking = resources_ready.get()
+
         print("[GS] Networking interface ready")
 
     async def run(self) -> None:
-        await asyncio.gather(self.connect_to_drones(), self.dispatch_current_command(), self.process_messages())
+        await asyncio.gather(self.connect_to_drones(), self.dispatch_current_command(), self.process_messages(), self.check_mavproxy())
 
     async def connect_to_drones(self) -> None:
         async def connect(drone_id: int) -> None:
             with contextlib.suppress(TimeoutError):
                 async with asyncio.timeout(2):
+                    self.drone_status_changed.emit(int(drone_id), DroneStatus.DISCONNECTED)
                     self.send_basic_message(drone_id, MessageType.PING)
                     while not self.drones[drone_id].is_responsive:
                         await asyncio.sleep(0)
@@ -409,4 +417,32 @@ class StationServer(QObject):
 
     def stop(self):
         self.go = False
+
+    async def check_mavproxy(self):
+        connection = mavutil.mavlink_connection("udpin:127.0.0.1:5505")
+
+        while self.go:
+            msg: Any = connection.recv_match(type=["SYS_STATUS", "STATUSTEXT", "BATTERY_STATUS"], blocking=False)
+            if msg is not None:
+                drone_id = int(msg.get_srcSystem())
+
+                match msg.get_type():
+                    case "SYS_STATUS":
+                        prearm_bit = mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK
+                        prearm_passing = bool(msg.onboard_control_sensors_health & prearm_bit)
+                        if prearm_passing != self.drones[drone_id].prearm_passing:
+                            self.prearm_passing_changed.emit(drone_id, prearm_passing)
+                        self.drones[drone_id].prearm_passing = prearm_passing 
+                    case "STATUSTEXT":
+                        status_text = (msg.severity, msg.text)
+                        self.drones[drone_id].add_line(status_text)
+                        self.status_text_added.emit(drone_id, *status_text)
+                    case "BATTERY_STATUS":
+                        battery_changed = msg.battery_remaining != self.drones[drone_id].battery
+                        self.drones[drone_id].battery = msg.battery_remaining
+                        if battery_changed:
+                            self.battery_changed.emit(drone_id, msg.battery_remaining)
+                    case _:
+                        pass
+            await asyncio.sleep(0)
 

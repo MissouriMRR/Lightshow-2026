@@ -39,7 +39,9 @@ class Window(QMainWindow):
         self.station_server = station_server
 
         self.tabs_list = []
-        self.start_frame = [0, 0, 0]
+        start_frame = self.station_server.config.get_center_coordinates()
+        if start_frame:
+            self.start_frame = start_frame
 
         self.setWindowTitle("Station")
         self.resize(800, 600)
@@ -56,17 +58,11 @@ class Window(QMainWindow):
         station_server.drone_position_changed.connect(self.osm.drone_position_listener)
         station_server.drone_color_changed.connect(self.osm.drone_color_listener)
 
-        self.telemetry = TelemetryDisplay()
-        state = DroneState()
-        self.telemetry.add_drone(1, DroneState())
-        self.telemetry.add_drone(2, state)
-        self.telemetry.add_drone(3, DroneState())
-        self.telemetry.add_drone(4, DroneState())
-        state.add_line((6, "asdf"))
-        state.add_line((5, "what"))
-        state.add_line((4, "ohno"))
-        state.add_line((3, "ack"))
-        state.status = opengl_station.DroneStatus.CONNECTED
+        self.telemetry = TelemetryDisplay(self, station_server)
+        station_server.drone_status_changed.connect(self.telemetry.drone_status_listener)
+        station_server.prearm_passing_changed.connect(self.telemetry.drone_state_listener)
+        station_server.status_text_added.connect(self.telemetry.drone_state_listener)
+        station_server.battery_changed.connect(self.telemetry.drone_state_listener)
 
         tabs_widget = Color("grey")
         tabs_widget.setFixedWidth(125)
@@ -120,3 +116,4 @@ class Window(QMainWindow):
 
         newTab = self.tabs_list[self.activeTab]
         newTab.setText("-->" + newTab.baseText)
+

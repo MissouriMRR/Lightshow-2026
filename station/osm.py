@@ -165,16 +165,17 @@ class OSM(QQuickWidget):
         self.overlay.raise_()
 
     @Slot(int, DroneStatus)
-    def drone_status_listener(self, drone_id: int, drone_status: DroneStatus):
+    def drone_status_listener(self, drone_id: int, _drone_status: DroneStatus):
         if drone_id not in self.drone_points:
             self.drone_points[drone_id] = DronePoint()
 
     @Slot(int, dronekit.LocationGlobalRelative)
     def drone_position_listener(self, drone_id: int, position: dronekit.LocationGlobalRelative):
-        self.drone_points[drone_id].position = QGeoCoordinate(
-            position.lat, position.lon
-        )
-        self.update()
+        if drone_id in self.drone_points:
+            self.drone_points[drone_id].position = QGeoCoordinate(
+                position.lat, position.lon
+            )
+            self.update()
 
     @Slot(int, dronekit.LocationGlobalRelative)
     def drone_color_listener(self, drone_id: int, r: int, g: int, b: int):

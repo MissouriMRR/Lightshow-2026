@@ -13,14 +13,8 @@
 #include <QOpenGLWidget>
 #include <QWindow>
 
-class GuiReadyEvent : public QEvent {
-  public:
-    GuiReadyEvent();
-
-    static int event_number;
-};
-
 class Gui : public QOpenGLWidget {
+    Q_OBJECT
   public:
     Gui(QWidget *parent = nullptr);
 
@@ -36,6 +30,9 @@ class Gui : public QOpenGLWidget {
     void setStatus(int id, DroneStatus state);
 
     Drone *drone = nullptr;
+
+  signals:
+    void guiReady();
 
   protected:
     void keyPressEvent(QKeyEvent *event) override;

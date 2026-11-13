@@ -9,7 +9,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 Ground::Ground(std::string assetDir)
-    : planeShader(assetDir + "shaders/planeVertex.glsl", assetDir + "shaders/planeFragment.glsl") {
+    : planeShader(assetDir + "shaders/plane.vert", assetDir + "shaders/plane.frag") {
     float vertices[6][3] = {
         {0, 0, 0}, {1, 0, 0}, {1, 0, 1},
 

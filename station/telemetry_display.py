@@ -1,13 +1,15 @@
-from typing import Callable, cast, override
+from typing import Callable, override
 
-from PySide6.QtCore import QEvent, QModelIndex, QObject, QPersistentModelIndex, QPoint, QSize, Qt
-from PySide6.QtGui import QColor, QMouseEvent, QPaintEvent, QPainter, QPalette, QRegion
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QListView, QListWidget, QListWidgetItem, QPushButton, QSizePolicy, QStyle, QStyleOptionViewItem, QStyledItemDelegate, QVBoxLayout, QWidget
+from PySide6.QtCore import QEvent, QObject, Qt, Slot
+from PySide6.QtGui import QColor, QPaintEvent, QPalette
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QSizePolicy, QVBoxLayout, QWidget
 from opengl_station import DroneStatus
 
 from common.drone_state import DroneState
 
 from pymavlink import mavutil
+
+from station.station_server import StationServer
 
 
 class DroneNotFoundError(Exception):
@@ -144,9 +146,9 @@ class DroneTelemetry(QWidget):
         self.item.setData(Qt.ItemDataRole.UserRole, self.state.min_line)
 
         self.stateLabel.setText(["DISCONNECTED", "CONNECTED", "ARMED"][self.state.status.value])
-        self.battLabel.setText(f"{self.state.battery:.1f}")
+        self.battLabel.setText(f"{self.state.battery:.1f}%")
 
-        self.setSeverityColor(self.base, self.state.min_line)
+        self.base.setStyleSheet(f"background-color: {'white' if self.state.prearm_passing else 'red'}")
 
         lines = self.state.get_lines()
         for i in range(len(lines)):
@@ -164,6 +166,8 @@ class DroneTelemetry(QWidget):
 
             self.setSeverityColor(widget, severity)
 
+        self.item.setSizeHint(self.sizeHint())
+
     def onClick(self) -> None:
         self.info.setVisible(not self.info.isVisible())
         self.item.setSizeHint(self.sizeHint())
@@ -175,21 +179,31 @@ class DroneTelemetry(QWidget):
 class DroneTelemetryItem(QListWidgetItem):
     @override
     def __lt__(self, other: QListWidgetItem):
-        return self.data(Qt.ItemDataRole.UserRole) < other.data(Qt.ItemDataRole.UserRole)
+        if self.data(Qt.ItemDataRole.UserRole) == other.data(Qt.ItemDataRole.UserRole):
+            return self.text() < other.text()
+        else:
+            return self.data(Qt.ItemDataRole.UserRole) < other.data(Qt.ItemDataRole.UserRole)
 
 
 class TelemetryDisplay(QListWidget):
     drones: dict[int, DroneTelemetry]
+    station_server: StationServer
 
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, parent: QWidget | None, station_server: StationServer):
         super().__init__(parent)
 
         self.drones = {}
         self.setSortingEnabled(True)
+        self.station_server = station_server
+
+    def drone_status_listener(self, drone_id: int, _status: DroneStatus):
+        if not self.findItems(str(drone_id), Qt.MatchFlag.MatchExactly):
+            self.add_drone(drone_id, self.station_server.drones[drone_id])
 
     def add_drone(self, drone_id: int, state: DroneState):
         item = DroneTelemetryItem()
         item.setData(Qt.ItemDataRole.UserRole, 7)
+        item.setText(str(drone_id))
         self.addItem(item)
 
         widget = DroneTelemetry(self, drone_id, state, item)
@@ -198,3 +212,7 @@ class TelemetryDisplay(QListWidget):
         self.setItemWidget(item, widget)
 
         self.drones[drone_id] = widget
+
+    @Slot(int)
+    def drone_state_listener(self, drone_id: int):
+        self.drones[drone_id].update()

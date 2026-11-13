@@ -28,5 +28,15 @@
     "localInfo": {
         "selfId": "2",
         "speedTestKbDataSize": "16"
+    },
+    "dimensions": {
+        "center_coordinates": [
+            37.94854353,
+            -91.78373309,
+            0.0
+        ],
+        "max_width": 10,
+        "max_length": 10,
+        "max_height": 20
     }
 }
