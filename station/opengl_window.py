@@ -125,6 +125,7 @@ class OpenGLWindow(QMainWindow):
     station_server: StationServer
     furthest_distance: float
 
+    frames: list[list[dronekit.LocationGlobalRelative]]
     start_frame: list[float]
 
     opengl_gui: opengl_station.Gui
@@ -152,6 +153,19 @@ class OpenGLWindow(QMainWindow):
         station_server.drone_color_changed.connect(self.drone_color_listener)
 
         self.tabsInternalList = []
+
+        drone_frames = self.station_server.config.get_all_drone_frames()
+        drone_values = list(drone_frames.values())
+        self.frames = [[] for _ in range(len(drone_values[0]))]
+        for drone_index, frame_names in enumerate(drone_values):
+            for frame_index, name in enumerate(frame_names):
+                location = self.station_server.config.get_frame_location(str(drone_index + 1), name)
+                if location is None:
+                    raise ValueError(
+                        f"Frame {name!r} for drone {drone_index + 1} has no coordinates"
+                    )
+                self.frames[frame_index].append(location)
+
 
         self.arm_button = QPushButton("arm")
         self.arm_button.clicked.connect(station_server.arm)
@@ -315,7 +329,7 @@ class OpenGLWindow(QMainWindow):
 
         combined = [
             self.point_to_meters(loc_to_point(loc))
-            for frame in self.station_server.frames
+            for frame in self.frames
             for loc in frame
         ]
 
@@ -344,7 +358,7 @@ class OpenGLWindow(QMainWindow):
 
     def calc_center(self) -> list[float]:
         combined = [
-            loc_to_point(loc) for frame in self.station_server.frames for loc in frame
+            loc_to_point(loc) for frame in self.frames for loc in frame
         ]
 
         return point_to_list(sum(combined, start=Point3d(0, 0, 0)) / len(combined))
