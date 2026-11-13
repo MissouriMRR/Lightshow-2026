@@ -360,10 +360,10 @@ Open 3 terminals from the `Lightshow/` directory:
 uv run gs_main.py
 
 # Terminal 2 - Drone 1
-uv run main.py -i 1
+uv run networking_test.py -i 1
 
 # Terminal 3 - Drone 2
-uv run main.py -i 2
+uv run networking_test.py -i 2
 ```
 
 Start the GS first, then start drones within 5 seconds. The GS runs a full mission sequence automatically: ping → takeoff → frame step → poll → land.

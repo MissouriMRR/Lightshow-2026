@@ -1,100 +1,52 @@
-"""Drone-node entry point.
+"""Drone entry point: runs a Drone that flies the show.
 
-Runs the low-level networking loop for a single drone: connects to the mesh,
-processes inbound commands via :class:`~drone.drone_command_handler.DroneCommandHandler`,
-and sends periodic heartbeats. Pass ``--id`` to override the self id from the
-config file.
+Uses the in-process SimVehicle by default. Pass ``--sitl`` to fly this drone's
+ArduPilot SITL instance instead, or ``--connect`` to give a flight controller
+connection string directly.
 """
 
 import argparse
-import queue
-import threading
-import time
+import asyncio
 
-from common.config import NETWORK_CONFIG_PATH
-from drone.drone_command_handler import DroneCommandHandler
-from drone.json_parser import ConfigParser
-from interdrone.message_types import Message, MessageType
-from interdrone.networking_interface import NetworkingInterface
-from interdrone.networking_thread import NetworkingThread
+from drone.drone import Drone
+
+MAVPROXY_BASE_PORT = 14600
+"""In SITL, drone N's MAVProxy forwards its MAVLink to main.py on UDP 14600 + N
+(see launch_sitl.py)."""
 
 
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("-i", "--id", help="Self ID", type=str)
+    vehicle_group = parser.add_mutually_exclusive_group()
+    vehicle_group.add_argument(
+        "-s",
+        "--sitl",
+        action="store_true",
+        help="Connect to this drone's SITL instance through its MAVProxy",
+    )
+    vehicle_group.add_argument(
+        "-c",
+        "--connect",
+        type=str,
+        help="Flight controller connection string, e.g. tcp:127.0.0.1:5760",
+    )
     args = parser.parse_args()
 
-    json_config_data = ConfigParser(NETWORK_CONFIG_PATH)
+    connection_string: str | None = args.connect
+    if args.sitl:
+        if args.id is None:
+            parser.error("--sitl needs --id to pick the SITL port")
+        connection_string = f"udp:127.0.0.1:{MAVPROXY_BASE_PORT + int(args.id)}"
 
-    if args.id is not None:
-        drone_id = str(args.id)
-        json_config_data.set_self_id(drone_id)
-    else:
-        self_id = json_config_data.get_self_id()
-        if self_id is None:
-            raise SystemExit("No self id in config; pass --id")
-        drone_id = self_id
-
-    print(f"[Drone {drone_id}] Starting...")
-
-    networking_thread_class = NetworkingThread()
-    resources_ready: queue.Queue[NetworkingInterface] = queue.Queue(maxsize=1)
-
-    networking_thread = threading.Thread(
-        target=networking_thread_class.run_networking_thread,
-        args=(resources_ready, json_config_data),
-        daemon=True,
+    drone = Drone(
+        args.id,
+        use_test_vehicle=connection_string is None,
+        vehicle_connection_string=connection_string or "",
     )
-    networking_thread.start()
 
-    networking = resources_ready.get()
-    print(f"[Drone {drone_id}] Networking interface ready")
-
-    # Initialize command handler
-    command_handler = DroneCommandHandler(drone_id=int(drone_id), networking=networking)
-
-    # Ping GS on startup to verify connectivity
-    command_handler.send_ping(target_id=0)
-
-    start_time = time.time()
-    last_heartbeat = time.time()
-    heartbeat_interval = 5.0
-
-    try:
-        while True:
-            # Process incoming commands and check for completion
-            command_handler.process_commands()
-
-            # No vehicle here, so simulate execution: a command finishes once
-            # its configured duration has elapsed
-            current_time = time.time()
-            pending = command_handler.pending_command
-            if (
-                pending is not None
-                and current_time - pending.start_time >= pending.duration
-            ):
-                pending.completed = True
-
-            # Send periodic heartbeat
-            if current_time - last_heartbeat >= heartbeat_interval:
-                heartbeat_message = Message.create(
-                    id=MessageType.HEARTBEAT,
-                    dronesToSendData=(),
-                    data={
-                        "senderId": int(drone_id),
-                        "payload": f"Heartbeat from Drone {drone_id}",
-                        "location": str(command_handler.drone_location),
-                    },
-                )
-                networking.queue_client_message(heartbeat_message)
-                last_heartbeat = current_time
-
-            time.sleep(0.05)
-
-    except KeyboardInterrupt:
-        elapsed = time.time() - start_time
-        print(f"\n[Drone {drone_id}] Program ran for {elapsed:.2f} seconds")
-        print("Shutting down...")
+    while True:
+        asyncio.run(drone.tick())
 
 
 if __name__ == "__main__":
