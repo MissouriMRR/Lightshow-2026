@@ -10,10 +10,9 @@ import asyncio
 
 from drone.drone import Drone
 
-SITL_BASE_PORT = 5750
-"""SITL instance (-I N-1) listens on 5760 + 10*(N-1)
-i.e. 5750 + 10*N for drone N.
-"""
+MAVPROXY_BASE_PORT = 14600
+"""In SITL, drone N's MAVProxy forwards its MAVLink to main.py on UDP 14600 + N
+(see launch_sitl.py)."""
 
 
 def main():
@@ -24,7 +23,7 @@ def main():
         "-s",
         "--sitl",
         action="store_true",
-        help="Connect to ArduPilot SITL instance",
+        help="Connect to this drone's SITL instance through its MAVProxy",
     )
     vehicle_group.add_argument(
         "-c",
@@ -38,7 +37,7 @@ def main():
     if args.sitl:
         if args.id is None:
             parser.error("--sitl needs --id to pick the SITL port")
-        connection_string = f"tcp:127.0.0.1:{SITL_BASE_PORT + 10 * int(args.id)}"
+        connection_string = f"udp:127.0.0.1:{MAVPROXY_BASE_PORT + int(args.id)}"
 
     drone = Drone(
         args.id,
