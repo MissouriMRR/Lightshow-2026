@@ -39,6 +39,8 @@ class DroneDisplay(QWidget):
         self.config = station_server.config
         self.opengl_gui = opengl_station.Gui(self)
 
+        self.opengl_gui.guiReady.connect(self.populateIps)
+
         self.furthest_distance = 0
 
         drone_frames = self.config.get_all_drone_frames()
@@ -102,22 +104,14 @@ class DroneDisplay(QWidget):
         drone_view_split.addWidget(self.opengl_gui)
         drone_view_split.setStretch(1, 7)
 
-    @override
-    def event(self, event: QEvent, /) -> bool:
-        match event.type():
-            case opengl_station.GuiReadyEvent.event_number:
-                # add drones to opengl widget
-                config = self.config
-                for id in config.get_drone_ids()[1:]:
-                    self.opengl_gui.setIp(
-                        int(id),
-                        f"{config.get_drone_ip(id)}:{config.get_drone_port(id)}",
-                    )
-
-            case _:
-                return super().event(event)
-
-        return True
+    @Slot()
+    def populateIps(self):
+        config = self.config
+        for id in config.get_drone_ids()[1:]:
+            self.opengl_gui.setIp(
+                int(id),
+                f"{config.get_drone_ip(id)}:{config.get_drone_port(id)}",
+            )
 
     @Slot(int, opengl_station.DroneStatus)
     def drone_status_listener(
@@ -153,17 +147,13 @@ class DroneDisplay(QWidget):
     def calc_furthest_distance(self) -> float:
         """Calculates the maximum distance from center that the drones will achieve"""
 
-        combined = [
-            self.point_to_meters(loc_to_point(loc))
-            for frame in self.frames
-            for loc in frame
-        ]
+        w = self.config.get_max_width()
+        l = self.config.get_max_length()
+        h = self.config.get_max_height()
 
-        return max(
-            max([x.x for x in combined]),
-            max([x.y for x in combined]),
-            max([x.z for x in combined]),
-        )
+        if w and l and h:
+            return max(w, l, h)
+        return -1
 
     def place_in_expanse(self, position: Point3d) -> Point3d:
         """Scales drone positions over precalculated expanse"""

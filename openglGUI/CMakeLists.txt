@@ -23,11 +23,11 @@ if (DO_BUILD)
         message(FATAL_ERROR "Shikoben6Tools Not Found; run uv sync --dev")
     endif()
 
+    set(CMAKE_AUTOMOC ON)
     shiboken_generator_create_binding(
         EXTENSION_TARGET opengl_station
         GENERATED_SOURCES 
             "${CMAKE_CURRENT_BINARY_DIR}/opengl_station/opengl_station_module_wrapper.cpp"
-            "${CMAKE_CURRENT_BINARY_DIR}/opengl_station/guireadyevent_wrapper.cpp"
             "${CMAKE_CURRENT_BINARY_DIR}/opengl_station/gui_wrapper.cpp"
         HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/glmKiller.h"
         TYPESYSTEM_FILE "${CMAKE_CURRENT_SOURCE_DIR}/typesystem.xml"

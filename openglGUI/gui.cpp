@@ -21,10 +21,6 @@
 #define ASSET_DIR ""
 #endif
 
-int GuiReadyEvent::event_number = QEvent::registerEventType();
-
-GuiReadyEvent::GuiReadyEvent() : QEvent((QEvent::Type)event_number) {}
-
 Gui::Gui(QWidget *parent) : QOpenGLWidget(parent) { setMouseTracking(true); }
 
 void Gui::initializeGL() {
@@ -52,16 +48,16 @@ void Gui::initializeGL() {
     stbi_set_flip_vertically_on_load(true);
 
     std::string assetDir = ASSET_DIR;
-    fontShader = new Shader(assetDir + "shaders/fontVertex.glsl", assetDir + "shaders/fontFragment.glsl");
-    quadShader = new Shader(assetDir + "shaders/fontVertex.glsl", assetDir + "shaders/quadFragment.glsl");
+    fontShader = new Shader(assetDir + "shaders/font.vert", assetDir + "shaders/font.frag");
+    quadShader = new Shader(assetDir + "shaders/font.vert", assetDir + "shaders/quad.frag");
 
     drone = new Drone(assetDir + "drone_model/drone_model.obj");
-    shader = new Shader(assetDir + "shaders/vertex.glsl", assetDir + "shaders/fragment.glsl");
+    shader = new Shader(assetDir + "shaders/base.vert", assetDir + "shaders/base.frag");
 
     quader = new Quader(assetDir + "fonts/arial.ttf");
     ground = new Ground(assetDir);
 
-    QCoreApplication::sendEvent(window(), new GuiReadyEvent());
+    emit guiReady();
 }
 
 void Gui::resizeGL(int w, int h) {
