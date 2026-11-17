@@ -8,27 +8,17 @@ connection string directly.
 import argparse
 import asyncio
 
-<<<<<<< HEAD
 from drone.drone import Drone
 
 MAVPROXY_BASE_PORT = 14600
 """In SITL, drone N's MAVProxy forwards its MAVLink to main.py on UDP 14600 + N
 (see launch_sitl.py)."""
-||||||| parent of 8d689c0 (refactor complete)
-from common.config import NETWORK_CONFIG_PATH
-from drone.drone_command_handler import DroneCommandHandler
-from drone.json_parser import ConfigParser
-from interdrone.message_types import Message, MessageType
-from interdrone.networking_interface import NetworkingInterface
-from interdrone.networking_thread import NetworkingThread
-=======
 from common.config import NETWORK_CONFIG_PATH
 from drone.drone_command_handler import DroneCommandHandler
 from drone.config_parser import ConfigParser
 from interdrone.message_types import Message, MessageType
 from interdrone.networking_interface import NetworkingInterface
 from interdrone.networking_thread import NetworkingThread
->>>>>>> 8d689c0 (refactor complete)
 
 
 def main():
