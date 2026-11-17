@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QHBoxLayout, QPushButton, QVBoxLayout, QWidget
 import dronekit
 import opengl_station
 
+from common.drone_state import DroneState
 from common.utils import loc_to_point
 from drone.config_parser import ConfigParser
 from station.color import Color
@@ -21,7 +22,6 @@ class DroneDisplay(QWidget):
 
     furthest_distance: float
 
-    frames: list[list[dronekit.LocationGlobalRelative]]
     start_frame: list[float]
 
     station_server: StationServer
@@ -42,18 +42,6 @@ class DroneDisplay(QWidget):
         self.opengl_gui.guiReady.connect(self.populateIps)
 
         self.furthest_distance = 0
-
-        drone_frames = self.config.get_all_drone_frames()
-        drone_values = list(drone_frames.values())
-        self.frames = [[] for _ in range(len(drone_values[0]))]
-        for drone_index, frame_names in enumerate(drone_values):
-            for frame_index, name in enumerate(frame_names):
-                location = self.config.get_frame_location(str(drone_index + 1), name)
-                if location is None:
-                    raise ValueError(
-                        f"Frame {name!r} for drone {drone_index + 1} has no coordinates"
-                    )
-                self.frames[frame_index].append(location)
 
         self.start_frame = start_frame
         self.furthest_distance = self.calc_furthest_distance()
@@ -115,22 +103,23 @@ class DroneDisplay(QWidget):
 
     @Slot(int, opengl_station.DroneStatus)
     def drone_status_listener(
-        self, drone_id: int, drone_status: opengl_station.DroneStatus
+        self, drone_id: int
     ):
-        self.opengl_gui.setStatus(drone_id, drone_status)
+        self.opengl_gui.setStatus(drone_id, self.station_server.drones[drone_id].status)
 
     @Slot(int, dronekit.LocationGlobalRelative)
     def drone_position_listener(
-        self, drone_id: int, position: dronekit.LocationGlobalRelative
+        self, drone_id: int
     ):
         """Listens for drone position changes to update opengl window"""
-        placed = self.place_in_expanse(loc_to_point(position))
+        placed = self.place_in_expanse(loc_to_point(self.station_server.drones[drone_id].pos))
         self.opengl_gui.setPos(drone_id, placed.x, placed.y, placed.z)
 
     @Slot(int, int, int, int)
-    def drone_color_listener(self, drone_id: int, r: int, g: int, b: int):
+    def drone_color_listener(self, drone_id: int):
+        color = self.station_server.drones[drone_id].color
         self.opengl_gui.setColor(
-            drone_id, r / 255.0, g / 255.0, b / 255.0, 1.0
+            drone_id, color[0] / 255.0, color[1] / 255.0, color[2] / 255.0, 1.0
         )
 
     def point_to_meters(self, point: Point3d) -> Point3d:
@@ -161,4 +150,3 @@ class DroneDisplay(QWidget):
         footed = self.point_to_meters(position)
         scaled = footed / self.furthest_distance
         return scaled * 20
-

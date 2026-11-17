@@ -26,6 +26,7 @@ class DroneState:
     is_responsive: bool = False
     pending_confirmation: MessageType | None = None
     pending_confirmation_time: float = 0.0
+    color: tuple[int, int, int] = (255, 255, 255)
 
     def add_line(self, line: tuple[int, str]):
         self.min_line = min(line[0], self.min_line)

@@ -43,14 +43,13 @@ class StationServer(QObject):
     confirmation_timeout: float
     heartbeat_timeout: float
 
-    drone_status_changed: Signal = Signal(int, DroneStatus)
-    drone_position_changed: Signal = Signal(int, dronekit.LocationGlobalRelative)
-    drone_color_changed: Signal = Signal(int, int, int, int)
+    drone_status_changed: Signal = Signal(int)
+    drone_position_changed: Signal = Signal(int)
+    drone_color_changed: Signal = Signal(int)
 
-    prearm_passing_changed: Signal = Signal(int, bool)
-    status_text_added: Signal = Signal(int, int, str)
-    battery_changed: Signal = Signal(int, int)
-
+    prearm_passing_changed: Signal = Signal(int)
+    status_text_added: Signal = Signal(int)
+    battery_changed: Signal = Signal(int)
 
     def __init__(self) -> None:
         super().__init__()
@@ -100,12 +99,13 @@ class StationServer(QObject):
         async def connect(drone_id: int) -> None:
             with contextlib.suppress(TimeoutError):
                 async with asyncio.timeout(2):
-                    self.drone_status_changed.emit(int(drone_id), DroneStatus.DISCONNECTED)
+                    self.drone_status_changed.emit(int(drone_id))
                     self.send_basic_message(drone_id, MessageType.PING)
                     while not self.drones[drone_id].is_responsive:
                         await asyncio.sleep(0)
-                    self.drone_status_changed.emit(drone_id, DroneStatus.CONNECTED)
-                    self.drones[drone_id] = DroneState()
+
+                    self.drones[drone_id].status = DroneStatus.CONNECTED
+                    self.drone_status_changed.emit(drone_id)
                     ids.remove(drone_id)
 
         while self.go:
@@ -160,7 +160,7 @@ class StationServer(QObject):
             self.send_basic_message(drone_id, MessageType.ARM)
             await self.confirmed(drone_id)
             self.drones[drone_id].status = DroneStatus.ARMED;
-            self.drone_status_changed.emit(drone_id, DroneStatus.ARMED)
+            self.drone_status_changed.emit(drone_id)
 
         await asyncio.gather(*[curry_arm(drone_id) for drone_id in self.drones])
 
@@ -196,7 +196,8 @@ class StationServer(QObject):
                     str(drone_id), "frame " + str(self.show_index)
                 )
                 if color is not None:
-                    self.drone_color_changed.emit(drone_id, *color)
+                    self.drones[drone_id].color = color
+                    self.drone_color_changed.emit(drone_id)
 
                 self.drones[drone_id].frame = self.show_index
 
@@ -215,7 +216,7 @@ class StationServer(QObject):
             await self.confirmed(drone_id)
             self.drones[drone_id].frame = -1
             self.drones[drone_id].status = DroneStatus.CONNECTED
-            self.drone_status_changed.emit(drone_id, DroneStatus.CONNECTED)
+            self.drone_status_changed.emit(drone_id)
 
         await asyncio.gather(*[curry_land(drone_id) for drone_id in self.drones])
 
@@ -223,7 +224,8 @@ class StationServer(QObject):
         async def curry_halt(drone_id: int):
             self.send_basic_message(drone_id, MessageType.HALT)
             await self.confirmed(drone_id)
-            self.drone_status_changed.emit(drone_id, DroneStatus.CONNECTED)
+            self.drones[drone_id].status = DroneStatus.CONNECTED
+            self.drone_status_changed.emit(drone_id)
 
         await asyncio.gather(*[curry_halt(drone_id) for drone_id in self.drones])
 
@@ -392,7 +394,8 @@ class StationServer(QObject):
                     print(f"[GS] Drone {drone_id} confirmation timeout: {pending}")
                     drone_status.is_responsive = False
                     drone_status.pending_confirmation = None
-                    self.drone_status_changed.emit(drone_id, DroneStatus.DISCONNECTED)
+                    self.drones[drone_id].status = DroneStatus.DISCONNECTED
+                    self.drone_status_changed.emit(drone_id)
 
     def _check_heartbeat_timeout(self) -> None:
         """Check for drones that haven't heartbeated recently"""
@@ -404,7 +407,8 @@ class StationServer(QObject):
             if elapsed > self.heartbeat_timeout and drone_status.is_responsive:
                 print(f"[GS] Drone {drone_id} heartbeat timeout")
                 drone_status.is_responsive = False
-                self.drone_status_changed.emit(drone_id, DroneStatus.DISCONNECTED)
+                self.drones[drone_id].status = DroneStatus.DISCONNECTED
+                self.drone_status_changed.emit(drone_id)
 
     def parse_location(self, message: Message) -> None:
         sender_id = int(message.data.get("senderId", -1))
@@ -413,7 +417,7 @@ class StationServer(QObject):
         location = str(message.data.get("location", ""))
         x, y, z = [float(v) for v in location[1:-1].split(",")]
         self.drones[sender_id].pos = dronekit.LocationGlobalRelative(x, y, z)
-        self.drone_position_changed.emit(sender_id, self.drones[sender_id].pos)
+        self.drone_position_changed.emit(sender_id)
 
     def stop(self):
         self.go = False
@@ -430,9 +434,9 @@ class StationServer(QObject):
                     case "SYS_STATUS":
                         prearm_bit = mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK
                         prearm_passing = bool(msg.onboard_control_sensors_health & prearm_bit)
-                        if prearm_passing != self.drones[drone_id].prearm_passing:
-                            self.prearm_passing_changed.emit(drone_id, prearm_passing)
                         self.drones[drone_id].prearm_passing = prearm_passing 
+                        if prearm_passing != self.drones[drone_id].prearm_passing:
+                            self.prearm_passing_changed.emit(drone_id)
                     case "STATUSTEXT":
                         status_text = (msg.severity, msg.text)
                         self.drones[drone_id].add_line(status_text)
@@ -441,7 +445,7 @@ class StationServer(QObject):
                         battery_changed = msg.battery_remaining != self.drones[drone_id].battery
                         self.drones[drone_id].battery = msg.battery_remaining
                         if battery_changed:
-                            self.battery_changed.emit(drone_id, msg.battery_remaining)
+                            self.battery_changed.emit(drone_id)
                     case _:
                         pass
             await asyncio.sleep(0)

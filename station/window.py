@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 from common.drone_state import DroneState
 from station.color import Color
 from station.drone_display import DroneDisplay
-from station.osm import OSM
+from station.osm_display import OSMDisplay
 from station.station_server import StationServer
 from station.tab import Tab
 from station.telemetry_display import TelemetryDisplay
@@ -25,13 +25,11 @@ class Window(QMainWindow):
     station_server: StationServer
 
     drone_display: DroneDisplay
-    osm: OSM
-    telemetry: TelemetryDisplay
+    osm_display: OSMDisplay
+    telemetry_display: TelemetryDisplay
 
     tabs_list: list[Tab]
     activeTab: int = 0
-
-    start_frame: list[float]
 
     def __init__(self, station_server: StationServer):
         super().__init__()
@@ -39,30 +37,33 @@ class Window(QMainWindow):
         self.station_server = station_server
 
         self.tabs_list = []
-        start_frame = self.station_server.config.get_center_coordinates()
-        if start_frame:
-            self.start_frame = start_frame
+        maybe_start_frame = self.station_server.config.get_center_coordinates()
+        start_frame: list[float]
+        if maybe_start_frame:
+            start_frame = maybe_start_frame
+        else:
+            raise RuntimeError("Start frame not found")
 
         self.setWindowTitle("Station")
         self.resize(800, 600)
 
 
-        self.drone_display = DroneDisplay(self, self.station_server, self.start_frame)
+        self.drone_display = DroneDisplay(self, self.station_server, start_frame)
         station_server.drone_status_changed.connect(self.drone_display.drone_status_listener)
         station_server.drone_position_changed.connect(self.drone_display.drone_position_listener)
         station_server.drone_color_changed.connect(self.drone_display.drone_color_listener)
 
-        self.osm = OSM(self.start_frame)
-        self.osm.hide()
-        station_server.drone_status_changed.connect(self.osm.drone_status_listener)
-        station_server.drone_position_changed.connect(self.osm.drone_position_listener)
-        station_server.drone_color_changed.connect(self.osm.drone_color_listener)
+        self.osm_display = OSMDisplay(start_frame, self.station_server.drones)
+        self.osm_display.hide()
+        station_server.drone_status_changed.connect(self.osm_display.drone_status_listener)
+        station_server.drone_position_changed.connect(self.osm_display.drone_position_listener)
+        station_server.drone_color_changed.connect(self.osm_display.drone_color_listener)
 
-        self.telemetry = TelemetryDisplay(self, station_server)
-        station_server.drone_status_changed.connect(self.telemetry.drone_status_listener)
-        station_server.prearm_passing_changed.connect(self.telemetry.drone_state_listener)
-        station_server.status_text_added.connect(self.telemetry.drone_state_listener)
-        station_server.battery_changed.connect(self.telemetry.drone_state_listener)
+        self.telemetry_display = TelemetryDisplay(self, station_server)
+        station_server.drone_status_changed.connect(self.telemetry_display.drone_status_listener)
+        station_server.prearm_passing_changed.connect(self.telemetry_display.drone_state_listener)
+        station_server.status_text_added.connect(self.telemetry_display.drone_state_listener)
+        station_server.battery_changed.connect(self.telemetry_display.drone_state_listener)
 
         tabs_widget = Color("grey")
         tabs_widget.setFixedWidth(125)
@@ -80,10 +81,10 @@ class Window(QMainWindow):
         self.tabs_list.append(
             Tab("aqua", main_split, self.drone_display, "Drone View")
         )
-        self.tabs_list.append(Tab("orange", main_split, self.osm, "Street View"))
+        self.tabs_list.append(Tab("orange", main_split, self.osm_display, "Street View"))
 
         scroll = QScrollArea()
-        scroll.setWidget(self.telemetry)
+        scroll.setWidget(self.telemetry_display)
         scroll.setWidgetResizable(True)
         self.tabs_list.append(Tab("green", main_split, scroll, "Telemetry"))
 

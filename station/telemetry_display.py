@@ -196,10 +196,6 @@ class TelemetryDisplay(QListWidget):
         self.setSortingEnabled(True)
         self.station_server = station_server
 
-    def drone_status_listener(self, drone_id: int, _status: DroneStatus):
-        if not self.findItems(str(drone_id), Qt.MatchFlag.MatchExactly):
-            self.add_drone(drone_id, self.station_server.drones[drone_id])
-
     def add_drone(self, drone_id: int, state: DroneState):
         item = DroneTelemetryItem()
         item.setData(Qt.ItemDataRole.UserRole, 7)
@@ -212,6 +208,11 @@ class TelemetryDisplay(QListWidget):
         self.setItemWidget(item, widget)
 
         self.drones[drone_id] = widget
+
+    @Slot(int)
+    def drone_status_listener(self, drone_id: int):
+        if not self.findItems(str(drone_id), Qt.MatchFlag.MatchExactly):
+            self.add_drone(drone_id, self.station_server.drones[drone_id])
 
     @Slot(int)
     def drone_state_listener(self, drone_id: int):
