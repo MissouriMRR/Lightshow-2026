@@ -1,6 +1,3 @@
-import json
-from collections.abc import Callable
-
 import dronekit
 
 from station.point import Point3d

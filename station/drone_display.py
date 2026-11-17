@@ -1,14 +1,11 @@
 from math import copysign
-from typing import override
 
-from PySide6.QtCore import QEvent, Slot
-from PySide6.QtGui import QColor, QPalette
-from PySide6.QtPositioning import QGeoCoordinate
-from PySide6.QtWidgets import QHBoxLayout, QPushButton, QVBoxLayout, QWidget
 import dronekit
 import opengl_station
+from PySide6.QtCore import Slot
+from PySide6.QtPositioning import QGeoCoordinate
+from PySide6.QtWidgets import QHBoxLayout, QPushButton, QVBoxLayout, QWidget
 
-from common.drone_state import DroneState
 from common.utils import loc_to_point
 from drone.config_parser import ConfigParser
 from station.color import Color
@@ -32,7 +29,12 @@ class DroneDisplay(QWidget):
     land_button: QPushButton
     halt_button: QPushButton
 
-    def __init__(self, parent: QWidget | None, station_server: StationServer, start_frame: list[float]):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        station_server: StationServer,
+        start_frame: list[float],
+    ):
         super().__init__(parent)
 
         self.station_server = station_server
@@ -45,7 +47,6 @@ class DroneDisplay(QWidget):
 
         self.start_frame = start_frame
         self.furthest_distance = self.calc_furthest_distance()
-
 
         self.arm_button = QPushButton("arm")
         self.arm_button.clicked.connect(station_server.arm)
@@ -67,7 +68,6 @@ class DroneDisplay(QWidget):
         self.halt_button.clicked.connect(station_server.halt)
         self.halt_button.setMaximumHeight(1000)
 
-
         buttons_widget = Color("blue")
         buttons_holder = QHBoxLayout()
 
@@ -80,7 +80,6 @@ class DroneDisplay(QWidget):
         buttons_holder.addWidget(self.step_button)
         buttons_holder.addWidget(self.land_button)
         buttons_holder.addWidget(self.halt_button)
-
 
         drone_view_split = QVBoxLayout()
         self.setLayout(drone_view_split)
@@ -102,17 +101,15 @@ class DroneDisplay(QWidget):
             )
 
     @Slot(int, opengl_station.DroneStatus)
-    def drone_status_listener(
-        self, drone_id: int
-    ):
+    def drone_status_listener(self, drone_id: int):
         self.opengl_gui.setStatus(drone_id, self.station_server.drones[drone_id].status)
 
     @Slot(int, dronekit.LocationGlobalRelative)
-    def drone_position_listener(
-        self, drone_id: int
-    ):
+    def drone_position_listener(self, drone_id: int):
         """Listens for drone position changes to update opengl window"""
-        placed = self.place_in_expanse(loc_to_point(self.station_server.drones[drone_id].pos))
+        placed = self.place_in_expanse(
+            loc_to_point(self.station_server.drones[drone_id].pos)
+        )
         self.opengl_gui.setPos(drone_id, placed.x, placed.y, placed.z)
 
     @Slot(int, int, int, int)

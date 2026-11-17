@@ -13,12 +13,6 @@ from drone.drone import Drone
 MAVPROXY_BASE_PORT = 14600
 """In SITL, drone N's MAVProxy forwards its MAVLink to main.py on UDP 14600 + N
 (see launch_sitl.py)."""
-from common.config import NETWORK_CONFIG_PATH
-from drone.drone_command_handler import DroneCommandHandler
-from drone.config_parser import ConfigParser
-from interdrone.message_types import Message, MessageType
-from interdrone.networking_interface import NetworkingInterface
-from interdrone.networking_thread import NetworkingThread
 
 
 def main():

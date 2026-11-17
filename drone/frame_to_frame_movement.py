@@ -7,9 +7,9 @@ import logging
 
 import dronekit
 
+from drone.config_parser import ConfigParser
 from drone.drone import Drone
 from drone.goto import move_to
-from drone.config_parser import ConfigParser
 from drone.vehicle import AnyVehicle
 
 

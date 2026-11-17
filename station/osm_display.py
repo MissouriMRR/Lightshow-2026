@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QWidget
 
 from common.drone_state import DroneState
 
+
 class Overlay(QWidget):
     map: OSMDisplay
 

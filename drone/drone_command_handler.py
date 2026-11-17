@@ -94,11 +94,11 @@ class DroneCommandHandler:
             self._check_command_completion()
 
     def send_ping(self, target_id: int) -> None:
-        self.networking.queue_client_message(Message.create(
-            id=MessageType.PING,
-            dronesToSendData=(target_id,),
-            data={"payload": ""}
-        ))
+        self.networking.queue_client_message(
+            Message.create(
+                id=MessageType.PING, dronesToSendData=(target_id,), data={"payload": ""}
+            )
+        )
 
     def _handle_command_sync(self, message: Message) -> None:
         """Handle incoming command message (sync version)"""

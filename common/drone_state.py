@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field
 import time
+from dataclasses import dataclass, field
 
 import dronekit
 from opengl_station import DroneStatus
@@ -14,7 +14,9 @@ class DroneState:
     # Battery
     # State?
 
-    pos: dronekit.LocationGlobalRelative = dronekit.LocationGlobalRelative(0, 0, 0)
+    pos: dronekit.LocationGlobalRelative = field(
+        default_factory=lambda: dronekit.LocationGlobalRelative(0, 0, 0)
+    )
     status: DroneStatus = DroneStatus.DISCONNECTED
     frame: int = -1
     battery: float = 0.0

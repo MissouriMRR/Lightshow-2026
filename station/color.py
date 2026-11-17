@@ -10,4 +10,3 @@ class Color(QWidget):
         palette = self.palette()
         palette.setColor(QPalette.ColorRole.Window, QColor(color))
         self.setPalette(palette)
-

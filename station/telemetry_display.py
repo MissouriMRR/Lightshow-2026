@@ -1,14 +1,20 @@
-from typing import Callable, override
-
-from PySide6.QtCore import QEvent, QObject, Qt, Slot
-from PySide6.QtGui import QColor, QPaintEvent, QPalette
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QSizePolicy, QVBoxLayout, QWidget
-from opengl_station import DroneStatus
-
-from common.drone_state import DroneState
+from collections.abc import Callable
+from typing import override
 
 from pymavlink import mavutil
+from PySide6.QtCore import QEvent, QObject, Qt, Slot
+from PySide6.QtGui import QColor, QPaintEvent, QPalette
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
+from common.drone_state import DroneState
 from station.station_server import StationServer
 
 
@@ -21,9 +27,9 @@ class SmallLabel(QLabel):
         super().__init__(text)
 
         self.setSizePolicy(
-                QSizePolicy.Policy.Fixed,
-                QSizePolicy.Policy.Fixed,
-                )
+            QSizePolicy.Policy.Fixed,
+            QSizePolicy.Policy.Fixed,
+        )
 
 
 class ClickFilter(QObject):
@@ -57,7 +63,9 @@ class DroneTelemetry(QWidget):
 
     item: QListWidgetItem
 
-    def __init__(self, parent: QWidget, id: int, state: DroneState, item: QListWidgetItem):
+    def __init__(
+        self, parent: QWidget, id: int, state: DroneState, item: QListWidgetItem
+    ):
         super().__init__(parent)
 
         self.id = id
@@ -145,10 +153,14 @@ class DroneTelemetry(QWidget):
     def paintEvent(self, event: QPaintEvent, /) -> None:
         self.item.setData(Qt.ItemDataRole.UserRole, self.state.min_line)
 
-        self.stateLabel.setText(["DISCONNECTED", "CONNECTED", "ARMED"][self.state.status.value])
+        self.stateLabel.setText(
+            ["DISCONNECTED", "CONNECTED", "ARMED"][self.state.status.value]
+        )
         self.battLabel.setText(f"{self.state.battery:.1f}%")
 
-        self.base.setStyleSheet(f"background-color: {'white' if self.state.prearm_passing else 'red'}")
+        self.base.setStyleSheet(
+            f"background-color: {'white' if self.state.prearm_passing else 'red'}"
+        )
 
         lines = self.state.get_lines()
         for i in range(len(lines)):
@@ -160,7 +172,7 @@ class DroneTelemetry(QWidget):
                 self.messageLayout.addWidget(widget)
             else:
                 widget = item.widget()  # pyright: ignore[reportAssignmentType]
-            
+
             severity, msg = lines[i]
             widget.setText(msg)
 
@@ -182,7 +194,9 @@ class DroneTelemetryItem(QListWidgetItem):
         if self.data(Qt.ItemDataRole.UserRole) == other.data(Qt.ItemDataRole.UserRole):
             return self.text() < other.text()
         else:
-            return self.data(Qt.ItemDataRole.UserRole) < other.data(Qt.ItemDataRole.UserRole)
+            return self.data(Qt.ItemDataRole.UserRole) < other.data(
+                Qt.ItemDataRole.UserRole
+            )
 
 
 class TelemetryDisplay(QListWidget):

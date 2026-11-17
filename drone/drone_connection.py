@@ -4,8 +4,8 @@ import threading
 import time
 from typing import Protocol
 
-from drone.drone_command_handler import DroneCommandHandler
 from drone.config_parser import ConfigParser
+from drone.drone_command_handler import DroneCommandHandler
 from drone.vehicle import AnyVehicle
 from interdrone.message_types import Message, MessageType
 from interdrone.networking_interface import NetworkingInterface

@@ -1,6 +1,6 @@
 from enum import Enum
 
-from PySide6.QtCore import QEvent, Signal
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QWidget
 
 class DroneStatus(Enum):

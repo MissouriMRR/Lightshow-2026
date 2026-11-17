@@ -1,7 +1,6 @@
 from typing import override
 
-import opengl_station  # loads opengl_station shared library that the c++ was compiled into
-from PySide6.QtGui import QCloseEvent, QColor, QPalette
+from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QMainWindow,
@@ -10,7 +9,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from common.drone_state import DroneState
 from station.color import Color
 from station.drone_display import DroneDisplay
 from station.osm_display import OSMDisplay
@@ -47,23 +45,42 @@ class Window(QMainWindow):
         self.setWindowTitle("Station")
         self.resize(800, 600)
 
-
         self.drone_display = DroneDisplay(self, self.station_server, start_frame)
-        station_server.drone_status_changed.connect(self.drone_display.drone_status_listener)
-        station_server.drone_position_changed.connect(self.drone_display.drone_position_listener)
-        station_server.drone_color_changed.connect(self.drone_display.drone_color_listener)
+        station_server.drone_status_changed.connect(
+            self.drone_display.drone_status_listener
+        )
+        station_server.drone_position_changed.connect(
+            self.drone_display.drone_position_listener
+        )
+        station_server.drone_color_changed.connect(
+            self.drone_display.drone_color_listener
+        )
 
         self.osm_display = OSMDisplay(start_frame, self.station_server.drones)
         self.osm_display.hide()
-        station_server.drone_status_changed.connect(self.osm_display.drone_status_listener)
-        station_server.drone_position_changed.connect(self.osm_display.drone_position_listener)
-        station_server.drone_color_changed.connect(self.osm_display.drone_color_listener)
+        station_server.drone_status_changed.connect(
+            self.osm_display.drone_status_listener
+        )
+        station_server.drone_position_changed.connect(
+            self.osm_display.drone_position_listener
+        )
+        station_server.drone_color_changed.connect(
+            self.osm_display.drone_color_listener
+        )
 
         self.telemetry_display = TelemetryDisplay(self, station_server)
-        station_server.drone_status_changed.connect(self.telemetry_display.drone_status_listener)
-        station_server.prearm_passing_changed.connect(self.telemetry_display.drone_state_listener)
-        station_server.status_text_added.connect(self.telemetry_display.drone_state_listener)
-        station_server.battery_changed.connect(self.telemetry_display.drone_state_listener)
+        station_server.drone_status_changed.connect(
+            self.telemetry_display.drone_status_listener
+        )
+        station_server.prearm_passing_changed.connect(
+            self.telemetry_display.drone_state_listener
+        )
+        station_server.status_text_added.connect(
+            self.telemetry_display.drone_state_listener
+        )
+        station_server.battery_changed.connect(
+            self.telemetry_display.drone_state_listener
+        )
 
         tabs_widget = Color("grey")
         tabs_widget.setFixedWidth(125)
@@ -78,10 +95,10 @@ class Window(QMainWindow):
         main_split.addWidget(tabs_widget)
         main_split.addWidget(self.drone_display)
 
+        self.tabs_list.append(Tab("aqua", main_split, self.drone_display, "Drone View"))
         self.tabs_list.append(
-            Tab("aqua", main_split, self.drone_display, "Drone View")
+            Tab("orange", main_split, self.osm_display, "Street View")
         )
-        self.tabs_list.append(Tab("orange", main_split, self.osm_display, "Street View"))
 
         scroll = QScrollArea()
         scroll.setWidget(self.telemetry_display)
@@ -117,4 +134,3 @@ class Window(QMainWindow):
 
         newTab = self.tabs_list[self.activeTab]
         newTab.setText("-->" + newTab.baseText)
-

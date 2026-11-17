@@ -132,7 +132,7 @@ void Gui::checkButtons(QMouseEvent *event) {
 
     click = true;
     click &= !drone->checkButtons(xpos, ypos, event->modifiers() & Qt::ShiftModifier,
-                                   event->modifiers() & Qt::ControlModifier);
+                                  event->modifiers() & Qt::ControlModifier);
     drag = click && xpos < 0.9;
     repaint();
 }
@@ -142,7 +142,7 @@ void Gui::checkRelease(QMouseEvent *event) {
     getScaledCursorPos(&xpos, &ypos);
 
     if (!drone->checkDrones(xpos, ypos, event->modifiers() & Qt::ShiftModifier,
-                             event->modifiers() & Qt::ControlModifier, &camera, projection)) {
+                            event->modifiers() & Qt::ControlModifier, &camera, projection)) {
         drone->resetCurrentDrones();
         repaint();
     }

@@ -5,8 +5,8 @@ from PySide6.QtCore import QLoggingCategory
 from PySide6.QtGui import QSurfaceFormat
 from PySide6.QtWidgets import QApplication
 
-from station.window import Window
 from station.station_server import StationServer
+from station.window import Window
 
 
 def main() -> None:

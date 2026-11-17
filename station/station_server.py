@@ -1,16 +1,16 @@
 import asyncio
 import contextlib
-from enum import Enum
 import queue
 import threading
 import time
+from enum import Enum
 from tkinter import messagebox
 from typing import Any
 
-from PySide6.QtCore import QObject, Signal
 import dronekit
 from opengl_station import DroneStatus
 from pymavlink import mavutil
+from PySide6.QtCore import QObject, Signal
 
 from common.config import NETWORK_CONFIG_PATH, SHOW_PATH
 from common.drone_state import DroneState
@@ -21,11 +21,11 @@ from interdrone.networking_thread import NetworkingThread
 
 
 class StationCommand(Enum):
-    ARM = 0,
-    TAKEOFF = 1,
-    STEP = 2,
-    LAND = 3,
-    HALT = 4,
+    ARM = (0,)
+    TAKEOFF = (1,)
+    STEP = (2,)
+    LAND = (3,)
+    HALT = (4,)
 
 
 class StationServer(QObject):
@@ -93,7 +93,12 @@ class StationServer(QObject):
         print("[GS] Networking interface ready")
 
     async def run(self) -> None:
-        await asyncio.gather(self.connect_to_drones(), self.dispatch_current_command(), self.process_messages(), self.check_mavproxy())
+        await asyncio.gather(
+            self.connect_to_drones(),
+            self.dispatch_current_command(),
+            self.process_messages(),
+            self.check_mavproxy(),
+        )
 
     async def connect_to_drones(self) -> None:
         async def connect(drone_id: int) -> None:
@@ -109,14 +114,14 @@ class StationServer(QObject):
                     ids.remove(drone_id)
 
         while self.go:
-            ids = [drone_id for drone_id in self.drones if not self.drones[drone_id].is_responsive]
+            ids = [
+                drone_id
+                for drone_id in self.drones
+                if not self.drones[drone_id].is_responsive
+            ]
             while len(ids) > 0:
-                await asyncio.gather(
-                    *[connect(drone_id) for drone_id in ids]
-                )
-            else:
-                await asyncio.sleep(1.0)
-
+                await asyncio.gather(*[connect(drone_id) for drone_id in ids])
+            await asyncio.sleep(1.0)
 
     async def dispatch_current_command(self):
         while self.go:
@@ -159,7 +164,7 @@ class StationServer(QObject):
         async def curry_arm(drone_id: int):
             self.send_basic_message(drone_id, MessageType.ARM)
             await self.confirmed(drone_id)
-            self.drones[drone_id].status = DroneStatus.ARMED;
+            self.drones[drone_id].status = DroneStatus.ARMED
             self.drone_status_changed.emit(drone_id)
 
         await asyncio.gather(*[curry_arm(drone_id) for drone_id in self.drones])
@@ -182,14 +187,18 @@ class StationServer(QObject):
     async def _step(self) -> None:
         if list(filter(lambda x: x.frame == -1, self.drones.values())):
             messagebox.showerror("Error", "Drones not taken off")
-        elif list(filter(lambda x: x.pending_confirmation is not None, self.drones.values())):
+        elif list(
+            filter(lambda x: x.pending_confirmation is not None, self.drones.values())
+        ):
             messagebox.showerror("Error", "Frame transition in progress")
         elif self.show_index >= self.num_frames:
             messagebox.showerror("Error", "No frames left to step")
         else:
 
             async def curry_send(drone_id: int) -> None:
-                self.send_basic_message(drone_id, MessageType.FRAME_STEP, str(self.show_index))
+                self.send_basic_message(
+                    drone_id, MessageType.FRAME_STEP, str(self.show_index)
+                )
                 await self.confirmed(drone_id)
 
                 color = self.config.get_frame_color(
@@ -205,7 +214,9 @@ class StationServer(QObject):
             await asyncio.gather(*[curry_send(d) for d in self.drones])
 
     async def _land(self) -> None:
-        if list(filter(lambda x: x.pending_confirmation is not None, self.drones.values())):
+        if list(
+            filter(lambda x: x.pending_confirmation is not None, self.drones.values())
+        ):
             messagebox.showerror("Error", "Frame transition in progress")
             return
 
@@ -234,33 +245,33 @@ class StationServer(QObject):
             await asyncio.sleep(0)
 
     def drones_all_connected(self) -> bool:
-        return all([x.is_responsive for x in self.drones.values()])
+        return all(x.is_responsive for x in self.drones.values())
 
     def drones_all_armed(self) -> bool:
-        return all([x.status == DroneStatus.ARMED for x in self.drones.values()])
+        return all(x.status == DroneStatus.ARMED for x in self.drones.values())
 
     def send_basic_message(
-        self,
-        drone_id: int,
-        message_type: MessageType,
-        payload: str = ""
+        self, drone_id: int, message_type: MessageType, payload: str = ""
     ):
         if self.networking is None:
             raise RuntimeError("Networking not initialized. Call start() first.")
 
-        self.networking.queue_client_message(Message.create(
-            id=message_type,
-            dronesToSendData=(drone_id,),
-            data={
-                "payload": payload,
-            },
-        ))
+        self.networking.queue_client_message(
+            Message.create(
+                id=message_type,
+                dronesToSendData=(drone_id,),
+                data={
+                    "payload": payload,
+                },
+            )
+        )
 
-        self.drones[drone_id].pending_confirmation = self._get_confirmation_type(message_type)
+        self.drones[drone_id].pending_confirmation = self._get_confirmation_type(
+            message_type
+        )
         self.drones[drone_id].pending_confirmation_time = time.time()
 
         print(f"[GS] sending {message_type.name} to drone {drone_id}")
-
 
     async def process_messages(self) -> None:
         """
@@ -302,7 +313,6 @@ class StationServer(QObject):
                 return MessageType.ARM_CONFIRMATION
             case _:
                 return None
-
 
     def _handle_server_message(self, message: Message) -> None:
         """Handle messages from drones"""
@@ -426,15 +436,19 @@ class StationServer(QObject):
         connection = mavutil.mavlink_connection("udpin:127.0.0.1:5505")
 
         while self.go:
-            msg: Any = connection.recv_match(type=["SYS_STATUS", "STATUSTEXT", "BATTERY_STATUS"], blocking=False)
+            msg: Any = connection.recv_match(
+                type=["SYS_STATUS", "STATUSTEXT", "BATTERY_STATUS"], blocking=False
+            )
             if msg is not None:
                 drone_id = int(msg.get_srcSystem())
 
                 match msg.get_type():
                     case "SYS_STATUS":
                         prearm_bit = mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK
-                        prearm_passing = bool(msg.onboard_control_sensors_health & prearm_bit)
-                        self.drones[drone_id].prearm_passing = prearm_passing 
+                        prearm_passing = bool(
+                            msg.onboard_control_sensors_health & prearm_bit
+                        )
+                        self.drones[drone_id].prearm_passing = prearm_passing
                         if prearm_passing != self.drones[drone_id].prearm_passing:
                             self.prearm_passing_changed.emit(drone_id)
                     case "STATUSTEXT":
@@ -442,11 +456,12 @@ class StationServer(QObject):
                         self.drones[drone_id].add_line(status_text)
                         self.status_text_added.emit(drone_id, *status_text)
                     case "BATTERY_STATUS":
-                        battery_changed = msg.battery_remaining != self.drones[drone_id].battery
+                        battery_changed = (
+                            msg.battery_remaining != self.drones[drone_id].battery
+                        )
                         self.drones[drone_id].battery = msg.battery_remaining
                         if battery_changed:
                             self.battery_changed.emit(drone_id)
                     case _:
                         pass
             await asyncio.sleep(0)
-
