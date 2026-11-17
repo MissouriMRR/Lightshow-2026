@@ -2,7 +2,7 @@ import asyncio
 import time
 from asyncio.queues import Queue
 
-from drone.json_parser import ConfigParser
+from drone.config_parser import ConfigParser
 from interdrone.json_message_utilities import JsonMessageUtilities
 from interdrone.message_types import Message, MessageType
 

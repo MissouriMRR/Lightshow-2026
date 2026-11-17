@@ -1,281 +1,467 @@
 import asyncio
 import contextlib
-from collections.abc import Awaitable, Callable
+import queue
+import threading
+import time
 from enum import Enum
 from tkinter import messagebox
+from typing import Any
 
 import dronekit
+from opengl_station import DroneStatus
+from pymavlink import mavutil
+from PySide6.QtCore import QObject, Signal
 
 from common.config import NETWORK_CONFIG_PATH, SHOW_PATH
 from common.drone_state import DroneState
-from drone.json_parser import ConfigParser
-from station.station_connection import StationConnection, StationConnectionLike
+from drone.config_parser import ConfigParser
+from interdrone.message_types import Message, MessageType
+from interdrone.networking_interface import NetworkingInterface
+from interdrone.networking_thread import NetworkingThread
 
 
-class Message(Enum):
-    ARM = 0
-    TAKEOFF = 1
-    STEP = 2
-    LAND = 3
-    HALT = 4
+class StationCommand(Enum):
+    ARM = (0,)
+    TAKEOFF = (1,)
+    STEP = (2,)
+    LAND = (3,)
+    HALT = (4,)
 
 
-class StationServer:
+class StationServer(QObject):
     config: ConfigParser
-    connection: StationConnectionLike
-    drones: dict[str, DroneState]
+    drones: dict[int, DroneState]
+    num_frames: int
     show_index: int
 
-    frames: list[list[dronekit.LocationGlobalRelative]]
-    lifted: int
-    altitude_index: int
-    add: int
-    current_message: Message | None
-
+    networking: NetworkingInterface | None
+    _networking_thread: threading.Thread | None
     go: bool
 
-    drone_connect_listener: Callable[[str], None]
-    arm_listener: Callable[[str, bool], None]
-    drone_position_listener: Callable[[str, dronekit.LocationGlobalRelative], None]
-    drone_color_listener: Callable[[str, int, int, int], None]
+    current_command: StationCommand | None
 
-    @property
-    def armed(self) -> bool:
-        return not len(list(filter(lambda x: not x.armed, self.drones.values())))
+    confirmation_timeout: float
+    heartbeat_timeout: float
 
-    def __init__(self, connection: StationConnectionLike | None = None) -> None:
+    drone_status_changed: Signal = Signal(int)
+    drone_position_changed: Signal = Signal(int)
+    drone_color_changed: Signal = Signal(int)
+
+    prearm_passing_changed: Signal = Signal(int)
+    status_text_added: Signal = Signal(int)
+    battery_changed: Signal = Signal(int)
+
+    def __init__(self) -> None:
+        super().__init__()
         self.config = ConfigParser(NETWORK_CONFIG_PATH, SHOW_PATH)
         self.config.set_self_id("0")
 
-        drone_frames = self.config.get_all_drone_frames()  # TODO not this
-        drone_values = list(drone_frames.values())
-        self.frames = [[] for _ in range(len(drone_values[0]))]
-        for drone_index, frame_names in enumerate(drone_values):
-            for frame_index, name in enumerate(frame_names):
-                location = self.config.get_frame_location(str(drone_index + 1), name)
-                if location is None:
-                    raise ValueError(
-                        f"Frame {name!r} for drone {drone_index + 1} has no coordinates"
-                    )
-                self.frames[frame_index].append(location)
+        self.networking = None
 
-        if connection is None:
-            self.connection = StationConnection(self.config)
-        else:
-            self.connection = connection
-        self.connection.set_server(self)
-
-        for frame in self.frames:
-            frame.sort(key=lambda loc: -loc.alt)
+        # Drone tracking
         self.drones = {}
+        all_drone_ids = self.config.get_drone_ids()
+        for drone_id in all_drone_ids:
+            if drone_id != "0":
+                self.drones[int(drone_id)] = DroneState()
+
+        # Threading
+        self._networking_thread = None
+
+        # Timeouts
+        self.confirmation_timeout = 30.0
+        self.heartbeat_timeout = 10.0
+
+        self.num_frames = len(self.config.get_frame_names("1"))
         self.show_index = 0
 
-        self.lifted = 0
-        self.altitude_index = 0
-
-        self.add = 0
-
-        self.current_message = None
-
         self.go = True
+        self.current_command = None
 
-        # No-op until the GUI registers real listeners (see set_drone_listener etc.)
-        self.drone_connect_listener = lambda _drone_id: None
-        self.arm_listener = lambda _drone_id, _armed: None
-        self.drone_position_listener = lambda _drone_id, _position: None
-        self.drone_color_listener = lambda _drone_id, _r, _g, _b: None
+        networking_thread_class = NetworkingThread()
+        resources_ready: queue.Queue[NetworkingInterface] = queue.Queue(maxsize=1)
+
+        self._networking_thread = threading.Thread(
+            target=networking_thread_class.run_networking_thread,
+            args=(resources_ready, self.config),
+            daemon=True,
+        )
+        self._networking_thread.start()
+
+        self.networking = resources_ready.get()
+
+        print("[GS] Networking interface ready")
 
     async def run(self) -> None:
-        await asyncio.gather(self.initial_connect(), self.process_messages())
+        await asyncio.gather(
+            self.connect_to_drones(),
+            self.dispatch_current_command(),
+            self.process_messages(),
+            self.check_mavproxy(),
+        )
 
-    async def process_messages(self) -> None:
+    async def connect_to_drones(self) -> None:
+        async def connect(drone_id: int) -> None:
+            with contextlib.suppress(TimeoutError):
+                async with asyncio.timeout(2):
+                    self.drone_status_changed.emit(int(drone_id))
+                    self.send_basic_message(drone_id, MessageType.PING)
+                    while not self.drones[drone_id].is_responsive:
+                        await asyncio.sleep(0)
+
+                    self.drones[drone_id].status = DroneStatus.CONNECTED
+                    self.drone_status_changed.emit(drone_id)
+                    ids.remove(drone_id)
+
         while self.go:
-            await self.connection.tick()
+            ids = [
+                drone_id
+                for drone_id in self.drones
+                if not self.drones[drone_id].is_responsive
+            ]
+            while len(ids) > 0:
+                await asyncio.gather(*[connect(drone_id) for drone_id in ids])
+            await asyncio.sleep(1.0)
 
-            match self.current_message:
-                case Message.ARM:
+    async def dispatch_current_command(self):
+        while self.go:
+            match self.current_command:
+                case StationCommand.ARM:
                     await self._arm()
-                case Message.TAKEOFF:
+                case StationCommand.TAKEOFF:
                     await self._takeoff()
-                case Message.STEP:
+                case StationCommand.STEP:
                     await self._step()
-                case Message.LAND:
+                case StationCommand.LAND:
                     await self._land()
-                case Message.HALT:
+                case StationCommand.HALT:
                     await self._halt()
                 case _:
                     pass
-
-            self.current_message = None
+            self.current_command = None
             await asyncio.sleep(0)
 
-    def stop(self):
-        self.go = False
+    def arm(self):
+        self.current_command = StationCommand.ARM
 
-    def set_drone_listeners(
-        self,
-        drone_connect_listener: Callable[[str], None] | None,
-        arm_listener: Callable[[str, bool], None] | None,
-        drone_position_listener: Callable[[str, dronekit.LocationGlobalRelative], None]
-        | None,
-        drone_color_listener: Callable[[str, int, int, int], None] | None,
-    ) -> None:
-        if drone_connect_listener != None:
-            self.drone_connect_listener = drone_connect_listener
-        if arm_listener != None:
-            self.arm_listener = arm_listener
-        if drone_position_listener != None:
-            self.drone_position_listener = drone_position_listener
-        if drone_color_listener != None:
-            self.drone_color_listener = drone_color_listener
+    def takeoff(self):
+        self.current_command = StationCommand.TAKEOFF
 
-    def set_drone_position_listener(
-        self,
-        drone_position_listener: Callable[[str, dronekit.LocationGlobalRelative], None],
-    ):
-        self.drone_position_listener = drone_position_listener
+    def step(self):
+        self.current_command = StationCommand.STEP
 
-    async def initial_connect(self) -> None:
-        ids = self.config.get_drone_ids()[1:]
+    def land(self):
+        self.current_command = StationCommand.LAND
 
-        async def connect(drone_id: str) -> None:
-            with contextlib.suppress(TimeoutError):
-                async with asyncio.timeout(2):
-                    await self.connection.ping(drone_id)
-                    self.drone_connect_listener(drone_id)
-                    self.drones[drone_id] = DroneState()
-                    await self.connection.send_poll(drone_id)
-
-        while len(ids) > len(self.drones):
-            await asyncio.gather(
-                *[connect(drone_id) for drone_id in ids if drone_id not in self.drones]
-            )
-
-    def set_position(self, id: str, pos: dronekit.LocationGlobalRelative) -> None:
-        if id in self.drones:
-            self.drones[id].pos = pos
-            self.drone_position_listener(id, pos)
-
-    def get_frame(self, num: int) -> list[dronekit.LocationGlobalRelative]:
-        return self.frames[num]
-
-    def get_drone_positions(self) -> list[dronekit.LocationGlobalRelative]:
-        return [drone.pos for drone in self.drones.values()]
-
-    def get_drone_confirmeds(self) -> list[bool]:
-        return [drone.confirmed for drone in self.drones.values()]
-
-    async def dearm(self) -> None:
-        dearmeds: list[Awaitable[object]] = []
-        for drone_id in self.drones:
-            dearmeds.append(self.connection.dearm_drone(drone_id))
-            self.drones[drone_id].armed = False
-        await asyncio.gather(*dearmeds)
-
-        for drone_id in self.drones:
-            self.arm_listener(drone_id, False)
-
-    def arm(self) -> None:
-        self.current_message = Message.ARM
+    def halt(self):
+        self.current_command = StationCommand.HALT
 
     async def _arm(self) -> None:
-        if len(self.drones) != len(
-            self.config.get_for_all_drones(self.config.get_drone_connection)
-        ):
+        if not self.drones_all_connected():
             messagebox.showerror("Error", "Not all drones connected")
             return
 
-        async def and_set(drone_id: str) -> bool:
-            out = await self.connection.arm_drone(drone_id)
-            self.drones[drone_id].armed = True
-            return out
+        async def curry_arm(drone_id: int):
+            self.send_basic_message(drone_id, MessageType.ARM)
+            await self.confirmed(drone_id)
+            self.drones[drone_id].status = DroneStatus.ARMED
+            self.drone_status_changed.emit(drone_id)
 
-        for result in await asyncio.gather(*[and_set(d) for d in self.drones]):
-            if not result:
-                messagebox.showerror("Error", "Arming failed")
-                await self.dearm()
-                return
-
-        for drone_id in self.drones:
-            self.arm_listener(drone_id, True)
-
-    def takeoff(self) -> None:
-        self.current_message = Message.TAKEOFF
+        await asyncio.gather(*[curry_arm(drone_id) for drone_id in self.drones])
 
     async def _takeoff(self) -> None:
-        if not self.armed:
+        if not self.drones_all_armed():
             messagebox.showerror("Error", "Drones not armed")
             return
         elif list(filter(lambda x: x.frame != -1, self.drones.values())):
             messagebox.showerror("Error", "Drones already taken off")
             return
 
-        lift_order = list(zip(self.drones.keys(), self.frames[0], strict=False))
-        lift_order.sort(key=lambda pair: -pair[1].alt)
-        for drone_id, _ in lift_order:
-            self.drones[drone_id].confirmed = False
-            await self.connection.send_takeoff(drone_id)
-            self.drones[drone_id].confirmed = True
+        async def curry_takeoff(drone_id: int):
+            self.send_basic_message(drone_id, MessageType.TAKEOFF)
+            await self.confirmed(drone_id)
             self.drones[drone_id].frame = 0
-            await self.connection.send_poll(drone_id)
 
-    def step(self) -> None:
-        self.current_message = Message.STEP
+        await asyncio.gather(*[curry_takeoff(drone_id) for drone_id in self.drones])
 
     async def _step(self) -> None:
         if list(filter(lambda x: x.frame == -1, self.drones.values())):
             messagebox.showerror("Error", "Drones not taken off")
-        elif list(filter(lambda x: not x.confirmed, self.drones.values())):
+        elif list(
+            filter(lambda x: x.pending_confirmation is not None, self.drones.values())
+        ):
             messagebox.showerror("Error", "Frame transition in progress")
-        elif len(self.frames) <= self.show_index + 1:
+        elif self.show_index >= self.num_frames:
             messagebox.showerror("Error", "No frames left to step")
         else:
 
-            async def send(drone_id: str) -> None:
-                self.drones[drone_id].confirmed = False
-                await self.connection.send_step(drone_id)
+            async def curry_send(drone_id: int) -> None:
+                self.send_basic_message(
+                    drone_id, MessageType.FRAME_STEP, str(self.show_index)
+                )
+                await self.confirmed(drone_id)
 
                 color = self.config.get_frame_color(
-                    drone_id, "frame " + str(self.show_index)
+                    str(drone_id), "frame " + str(self.show_index)
                 )
                 if color is not None:
-                    self.drone_color_listener(drone_id, *color)
+                    self.drones[drone_id].color = color
+                    self.drone_color_changed.emit(drone_id)
 
-                self.drones[drone_id].confirmed = True
                 self.drones[drone_id].frame = self.show_index
-                await self.connection.send_poll(drone_id)
 
             self.show_index += 1
-            await asyncio.gather(*[send(d) for d in self.drones])
-
-    def land(self) -> None:
-        self.current_message = Message.LAND
+            await asyncio.gather(*[curry_send(d) for d in self.drones])
 
     async def _land(self) -> None:
-        if list(filter(lambda x: not x.confirmed, self.drones.values())):
+        if list(
+            filter(lambda x: x.pending_confirmation is not None, self.drones.values())
+        ):
             messagebox.showerror("Error", "Frame transition in progress")
             return
 
-        lift_order = list(
-            zip(self.drones.keys(), self.frames[self.show_index], strict=False)
-        )
-        lift_order.sort(key=lambda pair: pair[1].alt)
-
         self.show_index = 0
 
-        for drone_id, _ in lift_order:
-            self.drones[drone_id].confirmed = False
-            await self.connection.send_landing(drone_id)
-            self.drones[drone_id].confirmed = True
+        async def curry_land(drone_id: int) -> None:
+            self.send_basic_message(drone_id, MessageType.LAND)
+            await self.confirmed(drone_id)
             self.drones[drone_id].frame = -1
-            self.drones[drone_id].armed = False
-            await self.connection.send_poll(drone_id)
-            self.arm_listener(drone_id, False)
+            self.drones[drone_id].status = DroneStatus.CONNECTED
+            self.drone_status_changed.emit(drone_id)
 
-    def halt(self) -> None:
-        self.current_message = Message.HALT
+        await asyncio.gather(*[curry_land(drone_id) for drone_id in self.drones])
 
     async def _halt(self) -> None:
-        await asyncio.gather(*[self.connection.send_halt(d) for d in self.drones])
-        for drone_id in self.drones:
-            self.arm_listener(drone_id, False)
+        async def curry_halt(drone_id: int):
+            self.send_basic_message(drone_id, MessageType.HALT)
+            await self.confirmed(drone_id)
+            self.drones[drone_id].status = DroneStatus.CONNECTED
+            self.drone_status_changed.emit(drone_id)
+
+        await asyncio.gather(*[curry_halt(drone_id) for drone_id in self.drones])
+
+    async def confirmed(self, drone_id: int):
+        while self.drones[drone_id].pending_confirmation is not None:
+            await asyncio.sleep(0)
+
+    def drones_all_connected(self) -> bool:
+        return all(x.is_responsive for x in self.drones.values())
+
+    def drones_all_armed(self) -> bool:
+        return all(x.status == DroneStatus.ARMED for x in self.drones.values())
+
+    def send_basic_message(
+        self, drone_id: int, message_type: MessageType, payload: str = ""
+    ):
+        if self.networking is None:
+            raise RuntimeError("Networking not initialized. Call start() first.")
+
+        self.networking.queue_client_message(
+            Message.create(
+                id=message_type,
+                dronesToSendData=(drone_id,),
+                data={
+                    "payload": payload,
+                },
+            )
+        )
+
+        self.drones[drone_id].pending_confirmation = self._get_confirmation_type(
+            message_type
+        )
+        self.drones[drone_id].pending_confirmation_time = time.time()
+
+        print(f"[GS] sending {message_type.name} to drone {drone_id}")
+
+    async def process_messages(self) -> None:
+        """
+        Process incoming messages from drones.
+        Should be called regularly in main loop.
+        """
+        if not self.networking:
+            raise RuntimeError("Networking not initialized. Call start() first.")
+
+        while self.go:
+            # Check for server messages (from drones)
+            server_msg = self.networking.try_get_server_message(timeout=0.01)
+            if server_msg is not None:
+                self._handle_server_message(server_msg)
+
+            # Check for client responses (confirmations from drones)
+            client_msg = self.networking.try_get_client_response(timeout=0.01)
+            if client_msg is not None:
+                self._handle_client_response(client_msg)
+
+            # Check for timeouts
+            self._check_confirmations_timeout()
+            self._check_heartbeat_timeout()
+
+            await asyncio.sleep(0)
+
+    def _get_confirmation_type(self, command_type: MessageType) -> MessageType | None:
+        """Get the confirmation type for a command"""
+        match command_type:
+            case MessageType.TAKEOFF:
+                return MessageType.TAKEOFF_CONFIRMATION
+            case MessageType.FRAME_STEP:
+                return MessageType.FRAME_STEP_CONFIRMATION
+            case MessageType.LAND:
+                return MessageType.LAND_CONFIRMATION
+            case MessageType.HALT:
+                return MessageType.HALT_CONFIRMATION
+            case MessageType.ARM:
+                return MessageType.ARM_CONFIRMATION
+            case _:
+                return None
+
+    def _handle_server_message(self, message: Message) -> None:
+        """Handle messages from drones"""
+        match message.id:
+            case MessageType.HEARTBEAT:
+                sender_id = message.data.get("senderId")
+                if sender_id in self.drones:
+                    self.drones[sender_id].last_heartbeat = time.time()
+                    self.drones[sender_id].is_responsive = True
+                    self.parse_location(message)
+
+            case MessageType.PING_RESPONSE:
+                self._handle_ping_response(message)
+
+            case (
+                MessageType.TAKEOFF_CONFIRMATION
+                | MessageType.FRAME_STEP_CONFIRMATION
+                | MessageType.HALT_CONFIRMATION
+                | MessageType.LAND_CONFIRMATION
+                | MessageType.ARM_CONFIRMATION
+            ):
+                self._handle_confirmation(message)
+
+            case _:
+                pass
+
+    def _handle_client_response(self, message: Message) -> None:
+        """Handle confirmation messages from drones"""
+        match message.id:
+            case (
+                MessageType.TAKEOFF_CONFIRMATION
+                | MessageType.FRAME_STEP_CONFIRMATION
+                | MessageType.HALT_CONFIRMATION
+                | MessageType.LAND_CONFIRMATION
+                | MessageType.ARM_CONFIRMATION
+            ):
+                self._handle_confirmation(message)
+
+            case _:
+                pass
+
+    def _handle_confirmation(self, message: Message) -> None:
+        """Handle command completion confirmation"""
+        drone_id = message.data.get("droneId")
+        status = message.data.get("status", "unknown")
+
+        if drone_id not in self.drones:
+            return
+
+        drone_status = self.drones[drone_id]
+        drone_status.pending_confirmation = None
+        drone_status.pending_confirmation_time = 0.0
+
+        if status == "success":
+            print(f"[GS] Drone {drone_id} ✓ {message.id.name}")
+
+            # Update state based on confirmation
+            match message.id:
+                case MessageType.ARM_CONFIRMATION:
+                    drone_status.state = DroneStatus.ARMED
+                case MessageType.LAND_CONFIRMATION:
+                    drone_status.state = DroneStatus.CONNECTED
+                case MessageType.HALT_CONFIRMATION:
+                    drone_status.state = DroneStatus.CONNECTED
+                case _:
+                    pass
+        else:
+            print(f"[GS] Drone {drone_id} ✗ {message.id.name} failed")
+
+    def _handle_ping_response(self, message: Message) -> None:
+        """Handle PING_RESPONSE from a drone"""
+        sender_id = message.data.get("droneId", -1)
+        print(f"[GS] PING_RESPONSE from drone {sender_id}")
+
+        if sender_id in self.drones:
+            self.drones[sender_id].is_responsive = True
+            self.drones[sender_id].last_heartbeat = time.time()
+
+    def _check_confirmations_timeout(self) -> None:
+        """Check for pending confirmations that timed out"""
+        current_time = time.time()
+
+        for drone_id, drone_status in self.drones.items():
+            if drone_status.pending_confirmation is not None:
+                elapsed = current_time - drone_status.pending_confirmation_time
+
+                if elapsed > self.confirmation_timeout:
+                    pending = drone_status.pending_confirmation.name
+                    print(f"[GS] Drone {drone_id} confirmation timeout: {pending}")
+                    drone_status.is_responsive = False
+                    drone_status.pending_confirmation = None
+                    self.drones[drone_id].status = DroneStatus.DISCONNECTED
+                    self.drone_status_changed.emit(drone_id)
+
+    def _check_heartbeat_timeout(self) -> None:
+        """Check for drones that haven't heartbeated recently"""
+        current_time = time.time()
+
+        for drone_id, drone_status in self.drones.items():
+            elapsed = current_time - drone_status.last_heartbeat
+
+            if elapsed > self.heartbeat_timeout and drone_status.is_responsive:
+                print(f"[GS] Drone {drone_id} heartbeat timeout")
+                drone_status.is_responsive = False
+                self.drones[drone_id].status = DroneStatus.DISCONNECTED
+                self.drone_status_changed.emit(drone_id)
+
+    def parse_location(self, message: Message) -> None:
+        sender_id = int(message.data.get("senderId", -1))
+        if sender_id not in self.drones:
+            return
+        location = str(message.data.get("location", ""))
+        x, y, z = [float(v) for v in location[1:-1].split(",")]
+        self.drones[sender_id].pos = dronekit.LocationGlobalRelative(x, y, z)
+        self.drone_position_changed.emit(sender_id)
+
+    def stop(self):
+        self.go = False
+
+    async def check_mavproxy(self):
+        connection = mavutil.mavlink_connection("udpin:127.0.0.1:5505")
+
+        while self.go:
+            msg: Any = connection.recv_match(
+                type=["SYS_STATUS", "STATUSTEXT", "BATTERY_STATUS"], blocking=False
+            )
+            if msg is not None:
+                drone_id = int(msg.get_srcSystem())
+
+                match msg.get_type():
+                    case "SYS_STATUS":
+                        prearm_bit = mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK
+                        prearm_passing = bool(
+                            msg.onboard_control_sensors_health & prearm_bit
+                        )
+                        self.drones[drone_id].prearm_passing = prearm_passing
+                        if prearm_passing != self.drones[drone_id].prearm_passing:
+                            self.prearm_passing_changed.emit(drone_id)
+                    case "STATUSTEXT":
+                        status_text = (msg.severity, msg.text)
+                        self.drones[drone_id].add_line(status_text)
+                        self.status_text_added.emit(drone_id, *status_text)
+                    case "BATTERY_STATUS":
+                        battery_changed = (
+                            msg.battery_remaining != self.drones[drone_id].battery
+                        )
+                        self.drones[drone_id].battery = msg.battery_remaining
+                        if battery_changed:
+                            self.battery_changed.emit(drone_id)
+                    case _:
+                        pass
+            await asyncio.sleep(0)

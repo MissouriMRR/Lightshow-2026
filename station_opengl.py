@@ -5,8 +5,8 @@ from PySide6.QtCore import QLoggingCategory
 from PySide6.QtGui import QSurfaceFormat
 from PySide6.QtWidgets import QApplication
 
-from station.opengl_window import OpenGLWindow
 from station.station_server import StationServer
+from station.window import Window
 
 
 def main() -> None:
@@ -23,7 +23,7 @@ def main() -> None:
     app = QApplication([])
 
     station_server = StationServer()
-    window = OpenGLWindow(station_server)
+    window = Window(station_server)
 
     threading.Thread(target=asyncio.run, args=(station_server.run(),)).start()
 

@@ -6,7 +6,7 @@ The lightshow networking system enables communication between a **ground station
 
 - **Ground station** uses `GroundStationController` (in `station/ground_station_controller.py`)
 - **Drones** use `DroneCommandHandler` (in `drone/drone_command_handler.py`)
-- **Config** is loaded via `ConfigParser` (in `drone/json_parser.py`)
+- **Config** is loaded via `ConfigParser` (in `drone/config_parser.py`)
 
 ## Architecture
 
@@ -87,7 +87,7 @@ All commands are methods on `GroundStationController`. Every command accepts an 
 ### Setup
 
 ```python
-from drone.json_parser import ConfigParser
+from drone.config_parser import ConfigParser
 from station.ground_station_controller import GroundStationController
 
 config = ConfigParser("./models/Example jsons/example_config.json")
@@ -100,7 +100,7 @@ gs.start()  # Starts networking thread and blocks until ready
 Or manually, if you need access to the thread object:
 
 ```python
-from drone.json_parser import ConfigParser
+from drone.config_parser import ConfigParser
 from station.ground_station_controller import GroundStationController
 from interdrone.networking_thread import NetworkingThread
 import queue, threading
@@ -232,7 +232,7 @@ Drones use `DroneCommandHandler` to automatically process incoming commands and 
 ### Setup
 
 ```python
-from drone.json_parser import ConfigParser
+from drone.config_parser import ConfigParser
 from interdrone.networking_interface import NetworkingInterface
 from interdrone.networking_thread import NetworkingThread
 from drone.drone_command_handler import DroneCommandHandler

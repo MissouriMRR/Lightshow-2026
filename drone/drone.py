@@ -4,9 +4,9 @@ from enum import Enum
 import dronekit
 
 from common.config import NETWORK_CONFIG_PATH, SHOW_PATH
+from drone.config_parser import ConfigParser
 from drone.drone_connection import DroneConnection
 from drone.goto import move_to
-from drone.json_parser import ConfigParser
 from drone.sim_vehicle import SimVehicle
 from drone.vehicle import AnyVehicle
 

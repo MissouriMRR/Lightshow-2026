@@ -13,14 +13,8 @@
 #include <QOpenGLWidget>
 #include <QWindow>
 
-class GuiReadyEvent : public QEvent {
-  public:
-    GuiReadyEvent();
-
-    static int event_number;
-};
-
 class Gui : public QOpenGLWidget {
+    Q_OBJECT
   public:
     Gui(QWidget *parent = nullptr);
 
@@ -33,9 +27,12 @@ class Gui : public QOpenGLWidget {
     void setColor(int id, float r, float g, float b, float a);
     void setPos(int id, float x, float y, float z);
     void setIp(int id, std::string ip);
-    void setState(int id, DroneState state);
+    void setStatus(int id, DroneStatus state);
 
-    Drone *droney = nullptr;
+    Drone *drone = nullptr;
+
+  signals:
+    void guiReady();
 
   protected:
     void keyPressEvent(QKeyEvent *event) override;

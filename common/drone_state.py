@@ -1,16 +1,38 @@
+import time
+from dataclasses import dataclass, field
+
 import dronekit
+from opengl_station import DroneStatus
+
+from interdrone.message_types import MessageType
 
 
+@dataclass
 class DroneState:
-    pos: dronekit.LocationGlobalRelative
-    state: dronekit.SystemStatus
-    armed: bool
-    confirmed: bool
-    frame: int
+    # Prearm checks
+    # VerticalSpeed
+    # Battery
+    # State?
 
-    def __init__(self):
-        self.pos = dronekit.LocationGlobalRelative(0, 0, 0)
-        self.state = dronekit.SystemStatus("UNINIT")
-        self.armed = False
-        self.confirmed = True
-        self.frame = -1
+    pos: dronekit.LocationGlobalRelative = field(
+        default_factory=lambda: dronekit.LocationGlobalRelative(0, 0, 0)
+    )
+    status: DroneStatus = DroneStatus.DISCONNECTED
+    frame: int = -1
+    battery: float = 0.0
+    prearm_passing: bool = True
+    _lines: list[tuple[int, str]] = field(default_factory=list)
+    min_line: int = 7
+    state: DroneStatus = DroneStatus.DISCONNECTED
+    last_heartbeat: float = field(default_factory=time.time)
+    is_responsive: bool = False
+    pending_confirmation: MessageType | None = None
+    pending_confirmation_time: float = 0.0
+    color: tuple[int, int, int] = (255, 255, 255)
+
+    def add_line(self, line: tuple[int, str]):
+        self.min_line = min(line[0], self.min_line)
+        self._lines.append(line)
+
+    def get_lines(self):
+        return self._lines

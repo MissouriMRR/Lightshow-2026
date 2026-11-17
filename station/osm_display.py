@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 from pathlib import Path
 from typing import cast, override
 
-from PySide6.QtCore import QEvent, QPoint, QPointF, Qt, QUrl
+from PySide6.QtCore import QPoint, QPointF, Qt, QUrl, Slot
 from PySide6.QtGui import (
+    QColor,
     QGuiApplication,
     QMouseEvent,
     QPainter,
@@ -15,29 +18,24 @@ from PySide6.QtQuick import QQuickItem
 from PySide6.QtQuickWidgets import QQuickWidget
 from PySide6.QtWidgets import QWidget
 
-from station.events import DronePositionEvent
+from common.drone_state import DroneState
 
 
 class Overlay(QWidget):
-    points: list[QPoint]
+    map: OSMDisplay
 
-    def __init__(self, parent: QWidget):
+    def __init__(self, parent: OSMDisplay):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
-        self.points = []
-
-    def set_points(self, points: list[QPoint]):
-        self.points = points
+        self.map = parent
 
     @override
     def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setBrush(Qt.BrushStyle.SolidPattern)
-        painter.setBrush(Qt.GlobalColor.red)
-        for point in self.points:
-            painter.drawEllipse(point, 10, 10)
+        self.map.paint_points(painter)
         painter.end()
 
 
@@ -50,18 +48,18 @@ class Map(QQuickItem):
         return QGeoCoordinate(0, 0)
 
 
-class OSM(QQuickWidget):
+class OSMDisplay(QQuickWidget):
     map_object: Map
     mouse_down: bool = False
 
-    last: QPoint
+    last_mouse_pos: QPoint
     pan_speed: float = 0.01
 
     overlay: Overlay
+    drones: dict[int, DroneState]
+    placed_points: dict[int, QPoint]
 
-    drone_points: dict[int, QGeoCoordinate]
-
-    def __init__(self, start: list[float]):
+    def __init__(self, start: list[float], drones: dict[int, DroneState]):
         super().__init__()
         self.setResizeMode(QQuickWidget.ResizeMode.SizeRootObjectToView)
 
@@ -75,9 +73,11 @@ class OSM(QQuickWidget):
         else:
             raise FileNotFoundError("could not find Map in qml")
 
+        self.drones = drones
+        self.placed_points = {}
+
         self.overlay = Overlay(self)
-        self.drone_points = {}
-        self.last = QPoint(0, 0)
+        self.last_mouse_pos = QPoint(0, 0)
 
     def getSize(self):
         top_left = self.map_object.toCoordinate(QPointF(0, 0), True)
@@ -89,11 +89,11 @@ class OSM(QQuickWidget):
             abs(top_left.latitude() - bottom_right.latitude()),
         )
 
-    def place_points(self) -> list[QPoint]:
-        return [
-            self.map_object.fromCoordinate(x, False).toPoint()
-            for x in self.drone_points.values()
-        ]
+    def place_point(self, drone_id: int) -> None:
+        pos = self.drones[drone_id].pos
+        pointf = self.map_object.fromCoordinate(QGeoCoordinate(pos.lat, pos.lon), False)
+
+        self.placed_points[drone_id] = pointf.toPoint()
 
     @override
     def wheelEvent(self, e: QWheelEvent):
@@ -118,7 +118,7 @@ class OSM(QQuickWidget):
     @override
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if self.mouse_down:
-            delta = QPointF(event.x(), event.y()) - self.last
+            delta = QPointF(event.x(), event.y()) - self.last_mouse_pos
             delta.setX(-delta.x() * self.getSize().x() / self.width())
             delta.setY(delta.y() * self.getSize().y() / self.height())
 
@@ -140,11 +140,15 @@ class OSM(QQuickWidget):
                     QGeoCoordinate(panned.latitude(), -current.longitude() + delta.x()),
                 )
 
-        self.last = QPoint(event.x(), event.y())
+        self.last_mouse_pos = QPoint(event.x(), event.y())
+
+    def paint_points(self, painter: QPainter):
+        for drone_id in self.drones:
+            painter.setBrush(QColor(*self.drones[drone_id].color))
+            painter.drawEllipse(self.placed_points[drone_id], 10, 10)
 
     @override
     def paintEvent(self, event: QPaintEvent) -> None:
-        self.overlay.set_points(self.place_points())
         self.overlay.repaint()
         super().paintEvent(event)
 
@@ -154,14 +158,15 @@ class OSM(QQuickWidget):
         self.overlay.setGeometry(self.rect())
         self.overlay.raise_()
 
-    @override
-    def event(self, event: QEvent) -> bool:
-        if event.type() == DronePositionEvent.event_number:
-            pos_event = cast(DronePositionEvent, event)
-            self.drone_points[pos_event.id] = QGeoCoordinate(
-                pos_event.position.lat, pos_event.position.lon
-            )
-            self.update()
-            return False
+    @Slot(int)
+    def drone_status_listener(self, _drone_id: int):
+        self.overlay.update()
 
-        return super().event(event)
+    @Slot(int)
+    def drone_position_listener(self, drone_id: int):
+        self.place_point(drone_id)
+        self.overlay.update()
+
+    @Slot(int)
+    def drone_color_listener(self, _drone_id: int):
+        self.overlay.update()
